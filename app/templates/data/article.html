@@ -1,0 +1,152 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Article{% endblock %}
+{% block body %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible" role="alert" style="display:none">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <!-- <strong>Title</strong> --> {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+<section class="container-fluid">
+    <div class="row">
+        <div class="col-lg-7 left-div">
+            <form method="POST" autocomplete="off" class="form-horizontal">
+                <h2>Article</h2>
+                <hr class="full-divider">
+                <div class="form-group row">
+                    <label class="control-label text-left col-2" for="doi">
+                        DOI <a href="#" id="doi-link" target="_blank" style="display:none"><i class="fas fa-external-link-alt"></i></a>
+                    </label>
+                    {{ form.doi(class_="form-control col-4") }}
+                    <label class="control-label text-left col-2" for="pmid">
+                        Pubmed ID <a href="#" id="pmid-link" target="_blank" style="display:none"><i class="fas fa-external-link-alt"></i></a>
+                    </label>
+                    {{ form.pmid(class_="form-control col-4") }}
+                </div>
+                <div class="form-group row">
+                    {{ form.title.label(class_="control-label text-left col-2") }}
+                    {{ form.title(class_="form-control col-10") }}
+                </div>
+                <div class="form-group row">
+                    {{ form.journal.label(class_="control-label text-left col-2") }}
+                    {{ form.journal(class_="form-control col-10") }}
+                </div>
+                <div class="form-group row">
+                    {{ form.authors.label(class_="control-label text-left col-2") }}
+                    {{ form.authors(class_="form-control col-10") }}
+                </div>
+                <div class="form-group row">
+                    {{ form.abstract.label(class_="control-label text-left col-2") }}
+                    {{ form.abstract(class_="form-control col-10") }}
+                </div>
+                <div class="form-group row">
+                    {{ form.year.label(class_="control-label text-left col-2") }}
+                    {{ form.year(class_="form-control col-4") }}
+                    {{ form.pages.label(class_="control-label text-left col-2") }}
+                    {{ form.pages(class_="form-control col-4") }}
+                </div>
+                <div class="form-group row">
+                    {{ form.volume.label(class_="control-label text-left col-2") }}
+                    {{ form.volume(class_="form-control col-4") }}
+                    {{ form.issue.label(class_="control-label text-left col-2") }}
+                    {{ form.issue(class_="form-control col-4") }}
+                </div>
+                <div class="form-group row">
+                    <!-- EMPTY -->
+                    <p class="col-2"></p>
+                    {{ form.num_compounds.label(class_="control-label text-left col-2") }}
+                    {{ form.num_compounds(class_="form-control col-5") }}
+                    <!-- EMPTY -->
+                    <p class="col-3"></p>
+                </div>
+            </div>
+
+            <div class="col-lg-5 right-div">
+                <h2>Compounds</h2>
+                <hr class="full-divider">
+
+                <div data-toggle="fieldset" id="compound-fieldset">
+                        {{ form.add_compound(class_="btn btn-primary", style="margin-bottom:5px") }}
+                        <div class="dropdown" style="padding-bottom: 2px">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" id="compoundMenuBtn">
+                            Curated Compounds (#)<span class="caret"></span></button>
+                            <ul class="dropdown-menu scrollmenu " id="compoundMenu">
+                                 <!-- Leave this blank and add items with jQuery -->
+                            </ul>
+                        </div>
+
+                        <div class="scrollmenu" id="tabDiv">
+                            <!-- Leave this blank and add tabs with jQuery -->
+                        </div>
+
+                    {% for compound in form.compounds %}
+                        <div data-toggle="fieldset-entry" class="compound-row" id="compound-row-{{ loop.index0 }}" >
+                            <div class="row">
+                                <div class="col-12" style="margin-left:auto;margin-right :auto;text-align:center;">
+                                    <canvas class='compound-canvas' id='compound-canvas-{{ loop.index0 }}' width="400px" height="400px"></canvas>
+                                    <h4 id="compound-formula-{{ loop.index0 }}" class="compound-formula"></h4>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="compound-data-group col-11">
+                                        {{ compound.form.curated_compound.label }}
+                                        {{ compound.form.curated_compound(class_="known-compound-input") }}
+                                    <div class="form-group">
+                                        {{ compound.form.name.label(class_="control-label text-left") }}
+                                        {{ compound.form.name(class_="name-input form-control") }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ compound.form.smiles.label(class_="control-label text-left") }}
+                                        {{ compound.form.smiles(class_="smiles-input form-control") }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ compound.form.source_organism.label(class_="control-label text-left") }}
+                                        {{ compound.form.source_organism(class_="form-control") }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-1" style="margin:auto;text-align:center;">
+                                <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="compound-{{ loop.index0 }}-remove">
+                                    <span class="fas fa-trash"></span>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="row bottom-div col-12">
+                <div class="row col-12" style="padding-bottom: 1%">
+                    {{ form.needs_work.label(class_="control-label text-left col-2 emph") }}
+                    {{ form.needs_work(class_="form-control col-1") }}
+                    {{ form.notes.label(class_="control-label text-left col-2") }}
+                    {{ form.notes(class_="form-control col-7") }}
+                </div>
+
+                <div class="row col-12" style="margin:0 auto; padding-bottom: 1%; justify-content: center">
+                    {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-success btn-lg', type='submit') }}
+                </div>
+
+                <div class="row col-12" style="margin:0 auto; padding-bottom: 1%">
+                    <div class="row col-6" style="justify-content:left">
+                        <button type="button" class="btn btn-secondary" id="backArticle" style="width: 200px; margin: 0px 5px 0px;">Back</button>
+                        <button type="button" class="btn btn-secondary" id="fwdArticle" style="width: 200px; margin: 0px 5px 0px;">Skip</button>
+                    </div>
+                    <div class="row col-6" style="justify-content:right">
+                        {{ form.hidden_tag() }} {{ form.reject(class_='btn btn-danger', type='submit') }}
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</section>
+<script src="{{ url_for('static', filename='js/SmilesDrawer/dist/smiles-drawer.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/page.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Articles{% endblock %}
+{% block body%}
+<section class="container-fluid">
+    {{ utils.flashed_messages() }}
+    <h1 style="text-align:center;">Articles</h1>
+    {% if articles %}
+    <hr class="intro-divider">
+    <div class="center">
+        <table class='table table-striped'>
+            <thead>
+                <tr>
+                    <th width="5%">ID</th>
+                    <th width="20%">Journal</th>
+                    <th width="5%">Year</th>
+                    <th width="10%"># Compounds</th>
+                    <th width="40%">Title</th>
+                    <th width="10%">Completed</th>
+                    <th width="10%">Needs Work</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for article in articles.items %}
+                    {% if not article.is_nparticle %}
+                    <tr class="red-background">
+                    {% else %}
+                    <tr>
+                    {% endif%}
+                        <td><a href="{{ article_redirect(cur_id, ds_id, article.id) }}">{{ article.id }}</a></td>
+                        <td>{{ article.journal }}</td>
+                        <td>{{ article.year }}</td>
+                        <td align="center">{{ article.compounds|length }}</td>
+                        <td>{{ article.title }}</td>
+                        <td align="center">
+                            {% if article.completed %}
+                                <i class="far fa-check-circle green"></i>
+                            {% else %}
+                                <i class="far fa-times-circle red"></i>
+                            {% endif %}
+                        </td>
+                        <td align="center">
+                            {% if  article.needs_work %}
+                                <i class="far fa-check-circle green"></i>
+                            {% else %}
+                                <i class="far fa-times-circle red"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="text-align: center; padding-bottom: 5%">
+            {% if prev_url %}
+                <a href="{{ prev_url }}"><i class="fas fa-arrow-left fa-2x"></i></a>
+            {% endif %}
+            {% if next_url %}
+                <a href="{{ next_url }}"><i class="fas fa-arrow-right fa-2x"></i></a>
+            {% endif %}
+            <p>{{ articles.page }}/{{ articles.pages }}</p>
+        </div>
+    </div>
+    {% else %}
+        <hr class="intro-divider">
+        <div>
+            <h3 style="text-align:center;">
+                No current articles
+            </h3>
+        </div>
+    {% endif%}
+    <div>
+        <p>Note: An article higlighed with a red background indicates an article which has been flagged as not about natural product isolation.</p>
+    </div>
+</section>
+{% endblock %}

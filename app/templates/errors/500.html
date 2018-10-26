@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Forbidden{% endblock %}
+{% block body %}
+<div class="jumbotron error-message">
+    <h1> 500 Error </h1>
+    <h3> The server encountered an internal error. That's all we know. </h3>
+    <hr class="intro-divider">
+    <a href="{{ url_for('home.homepage') }}" class="btn btn-primary btn-lg">
+        <i class="fa fa-home"></i>
+        Home
+    </a>
+</div>
+{% endblock %}

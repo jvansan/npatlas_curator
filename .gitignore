@@ -1,0 +1,13 @@
+.DS_Store
+*.pyc
+instance/
+__pycache__
+.vscode
+.pytest_cache
+
+
+# For playground purposes
+bleh/
+quick-setup-play-db.py
+
+SECRET.txt

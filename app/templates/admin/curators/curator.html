@@ -1,0 +1,20 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% extends "base.html" %}
+{% block title %}
+    {% if add_curator %}
+        Add Curator
+    {% else %}
+        Edit Curator
+    {% endif %}
+{% endblock %}
+{% block body %}
+<div class="container">
+    {% if add_curator%}
+    <h1>Add Curator</h1>
+    {% else %}
+        <h1>Edit Curator</h1>
+    {% endif %}
+    <br/>
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}

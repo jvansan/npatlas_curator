@@ -1,0 +1,280 @@
+body, html {
+    width: 100%;
+    height: 100%;
+}
+
+body, h1, h2, h3, h4, h5 {
+    font-family: "Montserrat", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: bolder;
+}
+
+#logo img {
+    float: none;
+    clear: both;
+}
+
+p.copyright {
+    margin: 15px 0 0;
+}
+
+.btn {
+    font-weight: bold;
+}
+
+.intro-divider {
+    width: 400px;
+    border-top: 1px solid #f8f8f8;
+    border-bottom: 1px solid rgba(0,0,0,0.2);
+}
+
+.full-divider {
+    border-top: 1px solid #f8f8f8;
+    border-bottom: 1px solid rgba(0,0,0,0.2);
+}
+
+.globe-background {
+    background: url(../img/flexslider_spheres.jpg) no-repeat center center;
+    background-size: cover;
+    height: 100%;
+}
+
+.error-message {
+    text-align: center;
+    position: relative;
+    padding-top: 20%;
+    padding-bottom: 20%;
+}
+
+.intro-message {
+    text-shadow: 2px 2px 3px rgba(0,0,0,0.6);
+    color: whitesmoke;
+    text-align: center;
+}
+
+.intro-message h1{
+    font-size: 5rem;
+}
+
+.user-greeting {
+    color: dimgray;
+}
+
+table {
+    /* table-layout: auto; */
+    width: "100%";
+}
+
+input {
+    border: solid thin #D6DBDF;
+}
+
+.form-horizontal .control-label.text-left{
+    text-align: left;
+}
+
+.compound-data-group {
+    margin: 0 auto;
+    /* margin-top: 50px; */
+}
+
+.compound-formula {
+    text-align: center;
+}
+
+.compound-label {
+    text-align: center;
+}
+
+#compound-labels {
+    margin-top: 30px;
+    border-style: none none solid none;
+}
+
+
+.form-horizontal .form-group {
+    padding: 7px;
+}
+
+.form-horizontal .form-group:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.form-horizontal .compound-data-group .form-group{
+    background: none;
+}
+
+.form-signin {
+    width: 100%;
+    max-width: 330px;
+    padding: 15px;
+    margin: auto;
+}
+.form-signin .h1 {
+    background: #f8f8f8;
+    border: 1px;
+}
+.form-signin .form-control {
+    position: relative;
+    box-sizing: border-box;
+    height: auto;
+    padding: 10px;
+    font-size: 16px;
+}
+.form-signin .form-control:focus {
+    -index: 2;
+}
+.form-signin input[type="username"] {
+    margin-bottom: -1px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.form-signin input[type="password"] {
+    margin-bottom: 10px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.data-container {
+    display: flex;
+}
+
+.container > div {
+    flex: 1; /*grow*/
+}
+
+textarea {
+    resize: none;
+    border: solid thin #D6DBDF;
+}
+
+.nav-link {
+    font-size: 1.25rem;
+}
+
+.nav-link-small {
+    font-size: 1rem;
+}
+
+section.container {
+    padding-bottom: 2%;
+}
+
+.row > .left-div {
+    padding: 10px 15px 10px 50px;
+}
+
+.row > .right-div {
+    padding: 10px 50px 10px 15px;
+}
+
+.row > .bottom-div {
+    padding: 10px 50px 30px;
+}
+
+div.scrollmenu {
+    background-color: #f2f2f2;
+    overflow: auto;
+    white-space: nowrap;
+}
+
+div.scrollmenu button {
+    display: inline-block;
+    text-align: center;
+    padding: 10px;
+    text-decoration: none;
+    min-width: 80px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.img-container {
+    position: relative;
+    width: 50%;
+}
+
+.image {
+  opacity: 1;
+  border-radius: 8px;
+  margin: auto;
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: .5s ease;
+  backface-visibility: hidden;
+  padding-bottom: 2%;
+}
+
+.middle {
+  transition: .5s ease;
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%)
+}
+
+.img-container:hover .image {
+  opacity: 0.3;
+}
+
+.img-container:hover .middle {
+  opacity: 1;
+}
+
+.text {
+  background-color: #3398c4;
+  color: white;
+  font-size: 16px;
+  padding: 16px 32px;
+}
+
+.text .a {
+    color: white;
+    font-size: 16px;
+    padding: 16px 32px;
+}
+
+.grey-background {
+    background: #D6DBDF;
+}
+
+.red-background {
+    background: #f8d7da !important;
+}
+
+.green {
+    color: #3bb91c
+}
+
+.red {
+    color:#b91c1c
+}
+
+.bottom-pad {
+    padding: 20px;
+}
+
+.emph {
+    font-style: italic
+}
+
+.compound-menu {
+    width: 100%;
+    background-color: #D6DBDF;
+    border: none;
+    color: black;
+    padding: 5px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    -webkit-transition-duration: 0.4s; /* Safari */
+    transition-duration: 0.4s;
+}
+
+.compound-menu:hover {
+    background-color: rgb(174, 179, 184);
+}

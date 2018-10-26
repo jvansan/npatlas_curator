@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block body %}
+    <div class="jumbotron globe-background">
+        <div class="container intro-message">
+            <h1>Natural Products Atlas</h1>
+            <h1>Data Curation</h1>
+            <h3>Network views of chemical space</h3>
+            <hr class="intro-divider">
+        </div>
+    </div>
+    <div class="row grey-background">
+        <div class="col-6 text-center">
+            <div class="container-fluid img-container">
+                <h4>NP Atlas Website</h4>
+                <img src="{{ url_for('static', filename='img/Explore_popup_icon_v1.jpg') }}" alt="Go to NP Atlas" class="image" style="width:100%">
+                <div class="middle">
+                    <div class="text">
+                        <a href="http://npatlas.org" style="color:white" target="_blank"><h4>Go to the NP Atlas</h4></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 text-center">
+                <div class="container-fluid img-container">
+                    <h4>Curation Guide</h4>
+                    <img src="{{ url_for('static', filename='img/Discover_popup_icon_v1.jpg') }}" alt="Go to NP Atlas" class="image" style="width:100%">
+                    <div class="middle">
+                        <div class="text">
+                            <a href="{{ url_for('home.guide') }}" style="color:white" target="_blank"><h4>Go to Guide</h4></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+    <div class="bottom-pad">
+    </div>
+
+{% endblock %}

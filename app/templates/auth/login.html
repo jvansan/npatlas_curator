@@ -1,0 +1,19 @@
+{% import "bootstrap/utils.html" as utils %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block body %}
+    <div class="text-center">
+        <br>
+        {{ utils.flashed_messages() }}
+        <br>
+        <form method="POST" action="/login" class="form-signin">
+            <h1>Please Login</h1>
+            <label class="sr-only">{{ form.username.label }}:</label>
+            {{ form.username(class_="form-control", placeholder="Username", autofocus=true, required=true, type="username") }}
+            <label class="sr-only">{{ form.password.label }}:</label>
+            {{ form.password(class_="form-control" ,placeholder="Password", required=true, type="password") }}
+            {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-primary btn-lg', type_='login') }}
+        </form>
+    </div>
+{% endblock %}

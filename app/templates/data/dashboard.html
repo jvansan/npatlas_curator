@@ -1,0 +1,73 @@
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Data Dashboard{% endblock %}
+{% block body %}
+<div class="container">
+    {{ utils.flashed_messages() }}
+    <h1 style="text-align:center;">Datasets</h1>
+    {% if datasets %}
+    <hr class="intro-divider">
+    <div class="center">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th width="15%">Start or Resume Session</th>
+                    <th width="20%">Number Articles</th>
+                    <th width="15%">List Articles</th>
+                    <th width="25%">Create Date</th>
+                    <th width="25%">Last Edit Date</th>
+                    <th width="15%">Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dataset in datasets %}
+                    <tr>
+                        {% if dataset.articles|length == 0 %}
+                            <td> <em>No Articles</em> </td>
+                        {% elif dataset.completed %}
+                            <td> <em><b>Dataset completed</b></em> </td>
+                        {% elif dataset.last_article_id %}
+                            <td><a onclick="giveInstructions('{{ dataset.instructions }}')" href="{{ article_redirect(curator.id, dataset.id, dataset.last_article_id) }}">Resume Dataset</a></td>
+                        {% else %}
+                            <td><a onclick="giveInstructions('{{ dataset.instructions }}')" href="{{ article_redirect(curator.id, dataset.id, dataset.articles[0].id) }}">Start Dataset</a></td>
+                        {% endif %}
+                        <td> {{ dataset.articles|length }} </td>
+                        <td> <a href="{{ dataset_redirect(curator.id, dataset.id) }}">See all articles</a></td>
+                        <td> {{ dataset.create_date }} </td>
+
+                        <td> {{ dataset.last_edit_date }} </td>
+                        <td>
+                            {% if dataset.completed %}
+                                <i>TRUE</i>
+                            {% else%}
+                                <i>FALSE</i>
+                            {% endif%}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <hr class="intro-divider">
+        <div>
+            <h3 style="text-align:center;">
+                No current datasets for {{ curator.username }}
+            </h3>
+            <p style="text-align:center;">
+                Please contact the admin to get data!
+            </p>
+        </div>
+    {% endif %}
+</div>
+<script>
+function giveInstructions(inst) {
+    if (inst == "None") {
+        inst = "No special instructions."
+    }
+    inst = "𝐃𝐚𝐭𝐚𝐬𝐞𝐭 𝐈𝐧𝐬𝐭𝐫𝐮𝐜𝐭𝐢𝐨𝐧𝐬:\n\n" + inst;
+    window.alert(inst);
+    window.location.href = "window-location.html";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="NP Atlas Curation App">
+        <meta name="author" content="Jeff van Santen">
+        <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+        <title>{{ title }} | Natural Products Atlas Data Curation</title>
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+        <!-- Custom CSS -->
+        <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+        <!-- JavaScript imports -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    </head>
+
+    <body>
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="{{ url_for('home.homepage') }}" id="logo">
+                <img src="{{ url_for('static', filename='img/npatlas_logo_square_small.png') }}" alt="logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarData" aria-controls="navbarData" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collape navbar-collapse" id="navbarData">
+                <ul class="navbar-nav ml-auto">
+                    <li class="dropdown nav-item">
+                        <a class="dropdown-toggle nav-link" data-toggle="dropdown" href="#">Useful Links
+                        <span class="caret"></span></a>
+                        <ul class='dropdown-menu nav-item'>
+                            <li><a href="https://www.npatlas.org/joomla/" class="nav-link nav-link-small" target="_blank">NP Atlas</a></li>
+                            <li><a href="/guide" class="nav-link nav-link-small" target="_blank">Curation Guide</a></li>
+                            <li><a href="https://www.ncbi.nlm.nih.gov/labs/pubmed/" class="nav-link nav-link-small" target="_blank">PubMed</a></li>
+                            <li><a href="https://pubchem.ncbi.nlm.nih.gov/search/" class="nav-link nav-link-small" target="_blank">PubChem</a></li>
+                            <li><a href="http://www.chemspider.com/" class="nav-link nav-link-small" target="_blank">ChemSpider</a></li>
+                            <li><a href="https://jglobal.jst.go.jp/en" class="nav-link nav-link-small" target="_blank">J-GLOBAL</a></li>
+                        </ul>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('home.admin_dashboard') }}">Admin Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('data.curator_dashboard', cur_id=current_user.id) }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_curators') }}">Curators</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_articles') }}">Articles</a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('data.curator_dashboard', cur_id=current_user.id) }}">Dashboard</a>
+                            </li>
+                        {% endif %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="user-greeting nav-link disabled"><i class="fa fa-user"></i>  Hi, {{ current_user.username }}!</a>
+                            </li>
+                    {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i> Login</a>
+                            </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+        <main role="main">
+            {% block body %}
+            {% endblock %}
+        </main>
+
+    </body>
+</html>

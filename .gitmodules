@@ -1,0 +1,3 @@
+[submodule "app/static/js/SmilesDrawer"]
+	path = app/static/js/SmilesDrawer
+	url = https://github.com/reymond-group/smilesDrawer.git

@@ -1,0 +1,45 @@
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Admin - Articles{% endblock %}
+{% block body%}
+<div class="container">
+    <br>
+    {{ utils.flashed_messages() }}
+    <br>
+    <h1 style="text-align:center;">Articles</h1>
+    {% if articles %}
+    <hr class="intro-divider">
+    <div class="center">
+        <table class='table table-striped'>
+            <thead>
+                <tr>
+                    <th width="10%">ID</th>
+                    <th width="20%">Journal</th>
+                    <th width="10%">Year</th>
+                    <th width="20%"># Compounds</th>
+                    <th width="50%">Title</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for article in articles %}
+                    <tr>
+                        <td><a href="{{ article_redirect(article.id) }}">{{ article.id }}</a></td>
+                        <td>{{ article.journal }}</td>
+                        <td>{{ article.year }}</td>
+                        <td>{{ article.compounds|length }}</td>
+                        <td>{{ article.title }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <hr class="intro-divider">
+        <div>
+            <h3 style="text-align:center;">
+                No current articles
+            </h3>
+        </div>
+    {% endif%}
+</div>
+{% endblock %}
