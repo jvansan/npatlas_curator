@@ -14,10 +14,9 @@
                     <th width="5%">ID</th>
                     <th width="20%">Journal</th>
                     <th width="5%">Year</th>
-                    <th width="10%"># Compounds</th>
+                    <th width="15%" style="text-align: center"># Compounds</th>
                     <th width="40%">Title</th>
-                    <th width="10%">Completed</th>
-                    <th width="10%">Needs Work</th>
+                    <th width="15%" style="text-align: center">Completed</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,17 +29,10 @@
                         <td><a href="{{ article_redirect(cur_id, ds_id, article.id) }}">{{ article.id }}</a></td>
                         <td>{{ article.journal }}</td>
                         <td>{{ article.year }}</td>
-                        <td align="center">{{ article.compounds|length }}</td>
+                        <td style="text-align: center">{{ article.compounds|length }}</td>
                         <td>{{ article.title }}</td>
-                        <td align="center">
-                            {% if article.completed %}
-                                <i class="far fa-check-circle green"></i>
-                            {% else %}
-                                <i class="far fa-times-circle red"></i>
-                            {% endif %}
-                        </td>
-                        <td align="center">
-                            {% if  article.needs_work %}
+                        <td style="text-align: center">
+                            {% if article.completed and not article.needs_work %}
                                 <i class="far fa-check-circle green"></i>
                             {% else %}
                                 <i class="far fa-times-circle red"></i>
