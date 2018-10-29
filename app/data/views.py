@@ -22,6 +22,14 @@ def flash_errors(form):
                 error
             ), 'danger')
 
+def try_dbcommit():
+    try:
+        db.session.commit()
+        # flash('Data saved!')
+    except:
+        db.session.rollback()
+        flash('Error sending data to database... Please contact us!')
+
 
 @data.route('/data/curator<int:cur_id>')
 @login_required
@@ -102,11 +110,11 @@ def article(cur_id, ds_id, art_id):
 
     form = ArticleForm(obj=article)
 
-    if form.add_compound.data:
-        form.compounds.append_entry()
+    # if form.add_compound.data:
+    #     form.compounds.append_entry()
 
     if (form.validate_on_submit() or (form.is_submitted() and
-        ((form.needs_work.data and not form.add_compound.data) or form.reject.data))):
+        ((form.needs_work.data) or form.reject.data))):
         # Variable to track if on last article but unfinished dataset
         skip = False
 
@@ -159,12 +167,7 @@ def article(cur_id, ds_id, art_id):
             next_art_id = dataset.articles[next_dataset_idx].id
             dataset.last_article_id = next_art_id
 
-        try:
-            db.session.commit()
-            # flash('Data saved!')
-        except:
-            db.session.rollback()
-            flash('Error sending data to database... Please contact us!')
+        try_dbcommit()
 
         if dataset.completed or skip:
             return redirect(url_for('data.curator_dashboard',
@@ -210,7 +213,7 @@ def back_article():
     urlSplit = currentUrl.split('/')
     art_id = int(urlSplit[-1].strip('article'))
     ds_id = int(urlSplit[-2].strip('dataset'))
-    # Get article from DB and populate form
+    # Get article from DB
     article = Article.query.get_or_404(art_id)
     # Get dataset from DB
     dataset = Dataset.query.get_or_404(ds_id)
@@ -225,17 +228,45 @@ def back_article():
         returnUrl = '/'.join(urlSplit[:3] + [f"article{prev_art_id}"])
     return jsonify({'url': returnUrl})
 
-@data.route('/data/rejectArticle', methods=['POST'])
+@data.route('/data/addCompound', methods=['POST'])
 @login_required
-def reject_article():
-    """Method to flag article
-    """
+def add_compound():
     # Store current URL and get data
     currentUrl = request.form['url'].strip('/')
     urlSplit = currentUrl.split('/')
     art_id = int(urlSplit[-1].strip('article'))
-    ds_id = int(urlSplit[-2].strip('dataset'))
-    # Get article from DB and populate form
+    # Get article from DB
     article = Article.query.get_or_404(art_id)
-    # Get dataset from DB
-    dataset = Dataset.query.get_or_404(ds_id)
+
+    # Initialize a blank compound
+    compound = Compound()
+    # Make sure list isn't empty
+    if article.compounds:
+        # Get the source organism for the last compound of an article
+        compound.source_organism = article.compounds[-1].source_organism
+    # Add a blank compound to the article
+
+    article.compounds.append(compound)
+    try_dbcommit()
+    # Send back json with url to redirect
+    newUrl = currentUrl + "#last"
+    return jsonify({'url': newUrl})
+
+@data.route('/data/delCompound', methods=['POST'])
+@login_required
+def delete_compound():
+    # Store current URL and get data
+    currentUrl = request.form['url'].strip('/')
+    urlSplit = currentUrl.split('/')
+    art_id = int(urlSplit[-1].strip('article'))
+    comp_id = int(request.form['compId'])
+    # Get article from DB
+    article = Article.query.get_or_404(art_id)
+    # Get compound from DB
+    compound = Compound.query.get_or_404(comp_id)
+    # Compound index in article
+    idx = article.compounds.index(compound)
+    article.compounds.pop(idx)
+    try_dbcommit()
+
+    return jsonify({'url': currentUrl})

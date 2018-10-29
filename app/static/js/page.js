@@ -7,23 +7,13 @@ $(document).ready(() => {
                                     window.performance.navigation.type === 2 );
         if ( historyTraversal ) {
           // Handle page restore.
-          window.location.reload(true);
+          window.location=window.location;
         }
       });
 
     // variables
     const regex = /^10.\d{4,9}\//g;
-
-    // Catch new compound alert
-    newCompound = false
-    $(".alert").each(function(idx) {
-        if ($(this).text().includes("Error in the Compounds field - {'name': ['This field is required.'], 'smiles': ['This field is required.'], 'source_organism': ['This field is required.']}")) {
-            newCompound = true;
-        } else {
-            $(this).show();
-        }
-
-    })
+    var currentPath = window.location.pathname
 
     // Initialize SmilesDrawer
     var options = {
@@ -31,6 +21,13 @@ $(document).ready(() => {
         height: 400
     }
     var smilesDrawer = new SmilesDrawer.Drawer(options);
+
+    // Show all alerts except the one which arises when you add a new compound
+    $(".alert").each(function(idx) {
+        if (!$(this).text().includes("Error in the Compounds field - {'name': ")) {
+            $(this).show();
+        }
+    })
 
     // Draw compounds on page load
     $(".smiles-input").each( function(idx) {
@@ -83,11 +80,11 @@ $(document).ready(() => {
     // Hide all but first for compound field unless just added new compound
     // If new compound (catching by error), show that one
     $(".compound-row").hide();
-    if ( newCompound ){
+    if ( window.location.href.endsWith("#last") ){
         $(".compound-row").last().show();
         $(".compound-tab").last().addClass("active");
         $tabDiv = $("#tabDiv")
-        $tabDiv.scrollLeft($tabDiv.width()*20)
+        $tabDiv.scrollLeft($tabDiv.width()*100)
     } else {
         $(".compound-row").first().show();
         $(".compound-tab").first().addClass("active");
@@ -116,50 +113,6 @@ $(document).ready(() => {
         });
         }
     });
-
-    // HACKY SOLUTION - USED PYTHON and AJAX TO ADD COMPOUND
-    // This actually works very well
-    // Add row event
-    // $("#add-compound").on("click", function() {
-    //     let $this = $("#compound-fieldset");
-    //     // console.log($this);
-    //     let oldRow = $this.find(".compound-row:last");
-    //     var row = oldRow.clone(true, true);
-    //     let rowNum = parseInt(row[0].id.split("-")[2]) + 1;
-    //     // console.log(rowNum);
-    //     row.attr("id", "compound-row-"+ rowNum);
-    //     row.find("input").each( function() {
-    //         let $input = $(this);
-    //         let id = $input.attr("id");
-    //         let newId = id.replace( /\d{1,4}/g, rowNum.toString());
-    //         $input.attr("id", newId).attr("name", newId).attr("value", "").val("");
-    //         $input.prev().attr("for", newId);
-    //         // console.log($input);
-    //     });
-    //     row.find("canvas").each( function() {
-    //         $(this).attr("id", "compound-canvas-"+rowNum).removeAttr("alt");
-    //     });
-    //     row.find("h4").each( function() {
-    //         $(this).text("");
-    //         $(this).attr("id", "compound-formula-"+rowNum)
-    //     });
-
-    //     // Hide previous row and show new one
-    //     oldRow.after(row);
-    //     $(".compound-row").hide();
-    //     row.show();
-
-    //     // Create new button and add
-    //     let lastBtn = $(".compound-tab").last();
-    //     let btn = lastBtn.clone(true, true);
-    //     btn.text("New Compound").attr("id", "compound-tab-"+rowNum);
-
-    //     // Make tab appear active
-    //     $(".compound-tab").removeClass("active");
-    //     btn.addClass("active");
-    //     lastBtn.after(btn);
-    //     $("#tabDiv").scrollLeft(btn.offset().left);
-    // });
 
     // Compound select from tabs
     $(".compound-tab").on("click", function() {
@@ -206,46 +159,16 @@ $(document).ready(() => {
         }
     });
 
-    // Compound Curated Toggle
-    $(".known-compound-input").on("change", function() {
-        let rowNum = $(this).attr("id").split("-")[1];
-        let $target = $("#compound-tab-"+rowNum);
-        if ($(this).is(":checked")) {
-            $target.removeClass("btn-warning");
-            $target.addClass("btn-success");
-        } else {
-            $target.removeClass("btn-success");
-            $target.addClass("btn-warning");
+    // Close alert about num compounds if the field gets fixed
+    $("#num_compounds").on("keyup", function() {
+        if ($(this).val() == $(".compound-tab").length) {
+            $('.close').each( function() {
+                if ($(this).parent().text().includes("Number of Compounds field")) {
+                    $(this).parent().alert("close");
+                }
+            })
         }
-    });
-
-    // Remove row event
-    $("button[data-toggle=fieldset-remove-row]").on("click", function() {
-        let $this = $("#compound-fieldset");
-        // console.log($(this));
-        if ($this.find(".compound-row").length > 1) {
-            let thisRow = $(this).closest(".compound-row");
-            // console.log(thisRow)
-            let rowNum = thisRow.attr("id").split("-")[2];
-            thisRow.remove();
-            // Remove tab and menu-item too
-            $("#compound-tab-"+rowNum).remove();
-            $("#compound-menu-"+rowNum).remove();
-            // Deactivate all tabs
-            $(".compound-tab").removeClass("active");
-            // Show last row
-            if (parseInt(rowNum) == 0) {
-                $(".compound-tab").first().addClass("active");
-                $(".compound-row").first().show();
-            } else {
-                $("#compound-tab-"+(rowNum-1)).addClass("active");
-                $("#compound-row-"+(rowNum-1)).show();
-            }
-        } else {
-            console.log("Not enough rows to remove.")
-        }
-        updateMenuCount();
-    });
+    })
 
     // DOI Linkout
     if ($("input[id='doi']").val().match(regex)) {
@@ -288,11 +211,10 @@ $(document).ready(() => {
 
     // Forward an article
     $("#fwdArticle").on("click", function() {
-        let currentUrl = window.location.pathname;
         $.post('/data/nextArticle', {
-            url: currentUrl
+            url: currentPath
         }).done( function(retJson) {
-            console.log(retJson['url']);
+            // console.log(retJson['url']);
             if (retJson['url']) {
                 window.location.replace(window.location.origin + '/' + retJson['url']);
             } else {
@@ -305,11 +227,10 @@ $(document).ready(() => {
 
     // Back an article
     $("#backArticle").on("click", function() {
-        let currentUrl = window.location.pathname;
         $.post('/data/backArticle', {
-            url: currentUrl
+            url: currentPath
         }).done( function(retJson) {
-            console.log(retJson['url']);
+            // console.log(retJson['url']);
             if (retJson['url']) {
                 window.location.replace(window.location.origin + '/' + retJson['url']);
             } else {
@@ -320,6 +241,45 @@ $(document).ready(() => {
         });
     });
 
+    // Add a compound
+    $("#addCompound").on("click", function() {
+        $.post('/data/addCompound', {
+            url: currentPath
+        }).done( function(retJson) {
+            // console.log(retJson['url']);
+            if (retJson['url']) {
+                window.location.replace(window.location.origin + '/' + retJson['url']);
+
+            } else {
+                alert("Something else happended...")
+            }
+            location.reload();
+        }).fail( function() {
+            alert("Could not access server. Please contact admin.")
+        });
+    })
+
+    // Remove a compound
+    $("#delCompound").on("click", function() {
+        // TODO: Check if compound has NPAID
+        // Get current compound id
+        $tab = $("button.compound-tab.active");
+        let rowNum = $tab.attr("id").split("-")[2];
+        let compId = $("#compounds-{}-id".format(rowNum)).val();
+        $.post('/data/delCompound', {
+            url: currentPath,
+            compId: compId
+        }).done( function(retJson) {
+            // console.log(retJson);
+            if (retJson['url']) {
+                window.location.replace(window.location.origin + '/' + retJson['url']);
+            } else {
+                alert("Something else happended...")
+            }
+        }).fail( function() {
+            alert("Could not access server. Please contact admin.")
+        })
+    })
 });
 
 String.prototype.format = function () {
