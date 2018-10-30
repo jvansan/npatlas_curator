@@ -294,58 +294,30 @@ $(document).ready(() => {
 
     // Remove a compound
     $("#delCompound").on("click", function() {
-        // TODO: Check if compound has NPAID
         // Get current compound id
         $tab = $("button.compound-tab.active");
         let rowNum = $tab.attr("id").split("-")[2];
         let compId = $("#compounds-{}-id".format(rowNum)).val();
-        // Need to save article data and send to POST
-        let article = {
-            pmid: $("#pmid").val(),
-            doi: $("#doi").val(),
-            title: $("#title").val(),
-            journal: $("#journal").val(),
-            authors: $("#authors").val(),
-            abstract: $("#abstract").val(),
-            year: $("#year").val(),
-            pages: $("#pages").val(),
-            vol: $("#volume").val(),
-            iss: $("#issue").val(),
-            num_compounds: $("#num_compounds").val(),
-            needs_work: $("#needs_work").is(":checked"),
-            notes: $("#notes").val()
-        }
-        let compounds = []
-        // Need to collect compound data and send in POST to save data
-        $(".compound-row").each(function() {
-            let rowNum = parseInt($(this).attr("id").split("-")[2]);
-            let compound = {
-                id: $("#compounds-{}-id".format(rowNum)).val(),
-                name: $("#compounds-{}-name".format(rowNum)).val(),
-                smiles: $("#compounds-{}-smiles".format(rowNum)).val(),
-                source_organism: $("#compounds-{}-source_organism".format(rowNum)).val(),
-                curated_compound: $("#compounds-{}-curated_compound".format(rowNum)).is(":checked")
-            };
-            compounds.push(compound)
-        })
-        // Send POST
-        $.ajax({
-            url: "/data/delCompound",
-            type: "POST",
-            data: JSON.stringify({url: currentPath, compounds: compounds, article: article, compId: compId}),
-            contentType: "application/json; charset=utf-8",
-            success: function(retJson) {
-                    if (retJson['url']) {
-                        window.location.replace(window.location.origin + '/' + retJson['url']);
-                    } else {
-                        alert("Something else happended...")
+        if ($("#compounds-{}-curated_compound".format(rowNum)).is(":checked")) {
+            $("#dialog-confirm").removeAttr("style");
+            $("#dialog-confirm").dialog({
+                resizable: false,
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: {
+                    "Delete Compound": function() {
+                        deleteCompound(currentPath, compId);
+                        $(this).dialog('close');
+                    },
+                    Cancel: function() {
+                        $(this).dialog('close');
                     }
-                    window.location=window.location;
-                },
-            error: function() {
-                    alert("Could not access server. Please contact admin.")
                 }
-        })
+            })
+        } else {
+            deleteCompound(currentPath, compId);
+        }
     })
 
 // END jQUERY DOC READY
@@ -382,4 +354,54 @@ function scrolltabDiv(rowNum) {
             }
             out.scrollLeft(Math.max(0, q - (x - y)/2));
         }
+}
+
+function deleteCompound(currentPath, compId) {
+    // Need to save article data and send to POST
+    let article = {
+        pmid: $("#pmid").val(),
+        doi: $("#doi").val(),
+        title: $("#title").val(),
+        journal: $("#journal").val(),
+        authors: $("#authors").val(),
+        abstract: $("#abstract").val(),
+        year: $("#year").val(),
+        pages: $("#pages").val(),
+        vol: $("#volume").val(),
+        iss: $("#issue").val(),
+        num_compounds: $("#num_compounds").val(),
+        needs_work: $("#needs_work").is(":checked"),
+        notes: $("#notes").val()
+    }
+    let compounds = []
+    // Need to collect compound data and send in POST to save data
+    $(".compound-row").each(function() {
+        let rowNum = parseInt($(this).attr("id").split("-")[2]);
+        let compound = {
+            id: $("#compounds-{}-id".format(rowNum)).val(),
+            name: $("#compounds-{}-name".format(rowNum)).val(),
+            smiles: $("#compounds-{}-smiles".format(rowNum)).val(),
+            source_organism: $("#compounds-{}-source_organism".format(rowNum)).val(),
+            curated_compound: $("#compounds-{}-curated_compound".format(rowNum)).is(":checked")
+        };
+        compounds.push(compound)
+    })
+    // Send POST
+    $.ajax({
+        url: "/data/delCompound",
+        type: "POST",
+        data: JSON.stringify({url: currentPath, compounds: compounds, article: article, compId: compId}),
+        contentType: "application/json; charset=utf-8",
+        success: function(retJson) {
+                if (retJson['url']) {
+                    window.location.replace(window.location.origin + '/' + retJson['url']);
+                } else {
+                    alert("Something else happended...")
+                }
+                window.location=window.location;
+            },
+        error: function() {
+                alert("Could not access server. Please contact admin.")
+            }
+    });
 }

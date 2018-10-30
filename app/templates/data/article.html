@@ -14,6 +14,17 @@
     {% endfor %}
   {% endif %}
 {% endwith %}
+<!-- Delete NPAID compound confirmation -->
+<div id="dialog-confirm" title="Delete Compound?" style="display: none">
+    <p class="text-center"><i class="fas fa-exclamation-triangle fa-3x red"></i></p>
+    <p>
+        This compounds is currently listed in the NP Atlas.
+        Are you sure it does not belong with this article?
+    </p>
+    <p>
+        If yes, please provided a note with details.
+    </p>
+</div>
 <section class="container-fluid">
     <div class="row">
         <div class="col-lg-7 left-div">
