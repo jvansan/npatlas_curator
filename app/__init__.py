@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
@@ -38,6 +39,13 @@ def create_app(config_name):
     app.register_blueprint(home_blueprint)
     from .data import data as data_blueprint
     app.register_blueprint(data_blueprint, prefix='/data')
+
+    @app.before_first_request
+    def setup_logging():
+        if not app.debug:
+            # In production mode, add log handler to sys.stderr.
+            app.logger.addHandler(logging.StreamHandler())
+            app.logger.setLevel(logging.INFO)
 
     @app.errorhandler(403)
     def forbidden(error):
