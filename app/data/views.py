@@ -1,5 +1,5 @@
 from flask import (abort, flash, redirect, render_template, url_for,
-                   request, jsonify)
+                   request, jsonify, session)
 from flask_login import current_user, login_required
 
 from . import data
@@ -173,6 +173,8 @@ def article(cur_id, ds_id, art_id):
             dataset.last_article_id = next_art_id
 
         try_dbcommit()
+        # Clear session cookie
+        session.pop('compound', None)
 
         if dataset.completed or skip:
             return redirect(url_for('data.curator_dashboard',
@@ -183,7 +185,12 @@ def article(cur_id, ds_id, art_id):
     else:
         flash_errors(form)
 
-    return render_template('data/article.html', title='Article', form=form)
+    # Retrieve session cookie to redirect to correct compound
+    try:
+        compId = session['compound']
+    except KeyError:
+        compId = None
+    return render_template('data/article.html', title='Article', form=form, compId=compId)
 
 
 @data.route('/data/nextArticle', methods=['POST'])
@@ -288,12 +295,17 @@ def add_compound():
     article.compounds.append(compound)
     try_dbcommit()
 
+    # Store compound index in session cookie
+    session['compound'] = len(article.compounds) - 1
+
     # Send back json with url to redirect
     return jsonify({'url': currentUrl})
 
 @data.route('/data/delCompound', methods=['POST'])
 @login_required
 def delete_compound():
+    # Clear session cookie
+    session.pop('compound', None)
     # Store current URL and get data
     data = request.get_json()
     currentUrl = data['url'].strip('/')
@@ -309,5 +321,8 @@ def delete_compound():
     idx = article.compounds.index(compound)
     article.compounds.pop(idx)
     try_dbcommit()
+
+    # Store session cookie as compound before deleted
+    session['compound'] = idx - 1 if idx > 1 else 0
 
     return jsonify({'url': currentUrl})

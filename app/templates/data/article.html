@@ -25,6 +25,10 @@
         If yes, please provided a note with details.
     </p>
 </div>
+{% if compId %}
+    <!-- Hidden form with compound id if session compId -->
+    <input id="session-compId" type="hidden" style="display: none" value="{{ compId }}">
+{% endif %}
 <section class="container-fluid">
     <div class="row">
         <div class="col-lg-7 left-div">

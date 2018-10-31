@@ -80,9 +80,10 @@ $(document).ready(() => {
     // Hide all but first for compound field unless just added new compound
     // If new compound (catching by error), show that one
     $(".compound-row").hide();
-    if ( window.location.href.endsWith("#last") ){
-        $(".compound-row").last().show();
-        $(".compound-tab").last().addClass("active");
+    if ( $("#session-compId").length != 0 ){
+        let index = $("#session-compId").val();
+        $(".compound-row:eq( {} )".format(index)).show();
+        $(".compound-tab:eq( {} )".format(index)).addClass("active");
         $tabDiv = $("#tabDiv")
         $tabDiv.scrollLeft($tabDiv.width()*100)
     } else {
