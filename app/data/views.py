@@ -1,5 +1,5 @@
 from flask import (abort, flash, redirect, render_template, url_for,
-                   request, jsonify)
+                   request, jsonify, session)
 from flask_login import current_user, login_required
 
 from . import data
@@ -21,6 +21,39 @@ def flash_errors(form):
                 getattr(form, field).label.text,
                 error
             ), 'danger')
+
+def try_dbcommit():
+    try:
+        db.session.commit()
+        # flash('Data saved!')
+    except:
+        db.session.rollback()
+        flash('Error sending data to database... Please contact us!')
+
+def get_article_compounds(form):
+    actual_cmpds = []
+    for cmpd in form.compounds:
+        cmpd_form = cmpd.form
+        db_cmpd = None
+        if cmpd_form.id.data:
+            db_cmpd = Compound.query.get(cmpd_form.id.data)
+
+        if not db_cmpd:
+            db_cmpd = Compound()
+
+        db_cmpd.name = cmpd_form.name.data
+        db_cmpd.smiles = cmpd_form.smiles.data
+        db_cmpd.source_organism = cmpd_form.source_organism.data
+        db_cmpd.cid = cmpd_form.cid.data
+        db_cmpd.csid = cmpd_form.csid.data
+        db_cmpd.cbid = cmpd_form.cbid.data
+
+        if not db_cmpd.id:
+            db.session.add(db_cmpd)
+
+        actual_cmpds.append(db_cmpd)
+
+    return actual_cmpds
 
 
 @data.route('/data/curator<int:cur_id>')
@@ -102,38 +135,18 @@ def article(cur_id, ds_id, art_id):
 
     form = ArticleForm(obj=article)
 
-    if form.add_compound.data:
-        form.compounds.append_entry()
+    # if form.add_compound.data:
+    #     form.compounds.append_entry()
 
     if (form.validate_on_submit() or (form.is_submitted() and
-        ((form.needs_work.data and not form.add_compound.data) or form.reject.data))):
+        ((form.needs_work.data) or form.reject.data))):
         # Variable to track if on last article but unfinished dataset
         skip = False
 
         form.populate_obj(article)
 
-        actual_cmpds = []
-        # flash("There are %d compounds" % len(form.compounds))
-        for cmpd in form.compounds:
-            cmpd_form = cmpd.form
-            db_cmpd = None
-            if cmpd_form.id.data:
-                db_cmpd = Compound.query.get(cmpd_form.id.data)
-            if not db_cmpd:
-                db_cmpd = Compound()
-
-            db_cmpd.name = cmpd_form.name.data
-            db_cmpd.smiles = cmpd_form.smiles.data
-            db_cmpd.source_organism = cmpd_form.source_organism.data
-            db_cmpd.cid = cmpd_form.cid.data
-            db_cmpd.csid = cmpd_form.csid.data
-            db_cmpd.cbid = cmpd_form.cbid.data
-
-            if not db_cmpd.id:
-                db.session.add(db_cmpd)
-
-            actual_cmpds.append(db_cmpd)
-
+        # Get compounds from forms and save to article
+        actual_cmpds = get_article_compounds(form)
         article.compounds = actual_cmpds
 
         # Determine if article was rejected
@@ -145,12 +158,12 @@ def article(cur_id, ds_id, art_id):
 
         # Session tracking
         article.completed = True
-        if len([art for art in dataset.articles if art.completed]) == len(dataset.articles):
+        if len([art for art in dataset.articles if art.completed and not art.needs_work]) == len(dataset.articles):
             dataset.completed = True
             flash('Dataset completed!!')
         elif dataset.articles.index(article) == len(dataset.articles) - 1:
             skip = True
-            flash("Please go back and complete unfinshed articles!")
+            flash("Please go back and complete unfinished articles!")
 
         # Get next article_id dataset
         if not dataset.completed and not skip:
@@ -159,12 +172,9 @@ def article(cur_id, ds_id, art_id):
             next_art_id = dataset.articles[next_dataset_idx].id
             dataset.last_article_id = next_art_id
 
-        try:
-            db.session.commit()
-            # flash('Data saved!')
-        except:
-            db.session.rollback()
-            flash('Error sending data to database... Please contact us!')
+        try_dbcommit()
+        # Clear session cookie
+        session.pop('compound', None)
 
         if dataset.completed or skip:
             return redirect(url_for('data.curator_dashboard',
@@ -175,7 +185,12 @@ def article(cur_id, ds_id, art_id):
     else:
         flash_errors(form)
 
-    return render_template('data/article.html', title='Article', form=form)
+    # Retrieve session cookie to redirect to correct compound
+    try:
+        compId = session['compound']
+    except KeyError:
+        compId = None
+    return render_template('data/article.html', title='Article', form=form, compId=compId)
 
 
 @data.route('/data/nextArticle', methods=['POST'])
@@ -210,7 +225,7 @@ def back_article():
     urlSplit = currentUrl.split('/')
     art_id = int(urlSplit[-1].strip('article'))
     ds_id = int(urlSplit[-2].strip('dataset'))
-    # Get article from DB and populate form
+    # Get article from DB
     article = Article.query.get_or_404(art_id)
     # Get dataset from DB
     dataset = Dataset.query.get_or_404(ds_id)
@@ -225,17 +240,89 @@ def back_article():
         returnUrl = '/'.join(urlSplit[:3] + [f"article{prev_art_id}"])
     return jsonify({'url': returnUrl})
 
-@data.route('/data/rejectArticle', methods=['POST'])
+def save_data_to_article(article, data):
+    # Save article data from POST
+    art = data['article']
+    article.pmid = art['pmid']
+    article.doi = art['doi']
+    article.title = art['title']
+    article.journal = art['journal']
+    article.authors = art['authors']
+    article.abstract = art['abstract']
+    article.year = art['year']
+    article.pages = art['pages']
+    article.volume = art['vol']
+    article.issue = art['iss']
+    article.num_compounds = art['num_compounds']
+    article.needs_work = art['needs_work']
+    article.notes = art['notes']
+    # Save compound data from POST
+    actual_cmpds = []
+    for cmpd in data['compounds']:
+        db_cmpd = None
+        if cmpd['id']:
+            db_cmpd = Compound.query.get_or_404(cmpd['id'])
+
+        db_cmpd.name = cmpd['name']
+        db_cmpd.smiles = cmpd['smiles']
+        db_cmpd.source_organism = cmpd['source_organism']
+        db_cmpd.curated_compounds = cmpd['curated_compound']
+
+        actual_cmpds.append(db_cmpd)
+    article.compounds = actual_cmpds
+
+    return article
+
+@data.route('/data/addCompound', methods=['POST'])
 @login_required
-def reject_article():
-    """Method to flag article
-    """
+def add_compound():
     # Store current URL and get data
-    currentUrl = request.form['url'].strip('/')
+    data = request.get_json()
+    currentUrl = data['url'].strip('/')
     urlSplit = currentUrl.split('/')
     art_id = int(urlSplit[-1].strip('article'))
-    ds_id = int(urlSplit[-2].strip('dataset'))
-    # Get article from DB and populate form
+    # Get article from DB
     article = Article.query.get_or_404(art_id)
-    # Get dataset from DB
-    dataset = Dataset.query.get_or_404(ds_id)
+    article = save_data_to_article(article, data)
+
+    # Initialize a blank compound
+    compound = Compound()
+    # Make sure list isn't empty
+    if article.compounds:
+        # Get the source organism for the last compound of an article
+        compound.source_organism = article.compounds[-1].source_organism
+    # Add a blank compound to the article
+    article.compounds.append(compound)
+    try_dbcommit()
+
+    # Store compound index in session cookie
+    session['compound'] = len(article.compounds) - 1
+
+    # Send back json with url to redirect
+    return jsonify({'url': currentUrl})
+
+@data.route('/data/delCompound', methods=['POST'])
+@login_required
+def delete_compound():
+    # Clear session cookie
+    session.pop('compound', None)
+    # Store current URL and get data
+    data = request.get_json()
+    currentUrl = data['url'].strip('/')
+    urlSplit = currentUrl.split('/')
+    art_id = int(urlSplit[-1].strip('article'))
+    comp_id = int(data['compId'])
+    # Get article from DB
+    article = Article.query.get_or_404(art_id)
+    article = save_data_to_article(article, data)
+    # Get compound from DB
+    compound = Compound.query.get_or_404(comp_id)
+    # Compound index in article
+    idx = article.compounds.index(compound)
+    article.compounds.pop(idx)
+    try_dbcommit()
+
+    # Store session cookie as compound before deleted
+    session['compound'] = idx - 1 if idx > 1 else 0
+
+    return jsonify({'url': currentUrl})

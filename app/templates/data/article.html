@@ -14,6 +14,21 @@
     {% endfor %}
   {% endif %}
 {% endwith %}
+<!-- Delete NPAID compound confirmation -->
+<div id="dialog-confirm" title="Delete Compound?" style="display: none">
+    <p class="text-center"><i class="fas fa-exclamation-triangle fa-3x red"></i></p>
+    <p>
+        This compounds is currently listed in the NP Atlas.
+        Are you sure it does not belong with this article?
+    </p>
+    <p>
+        If yes, please provided a note with details.
+    </p>
+</div>
+{% if compId %}
+    <!-- Hidden form with compound id if session compId -->
+    <input id="session-compId" type="hidden" style="display: none" value="{{ compId }}">
+{% endif %}
 <section class="container-fluid">
     <div class="row">
         <div class="col-lg-7 left-div">
@@ -73,7 +88,9 @@
                 <hr class="full-divider">
 
                 <div data-toggle="fieldset" id="compound-fieldset">
-                        {{ form.add_compound(class_="btn btn-primary", style="margin-bottom:5px") }}
+                        <button type="button" class="btn btn-primary" id="addCompound">
+                            <span class="fas fa-plus"></span> Add Compound
+                        </button>
                         <div class="dropdown" style="padding-bottom: 2px">
                             <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" id="compoundMenuBtn">
                             Curated Compounds (#)<span class="caret"></span></button>
@@ -96,8 +113,8 @@
                             </div>
                             <div class="row">
                                 <div class="compound-data-group col-11">
-                                        {{ compound.form.curated_compound.label }}
-                                        {{ compound.form.curated_compound(class_="known-compound-input") }}
+                                        {{ compound.form.id(style="display:none") }}
+                                        {{ compound.form.curated_compound(style="display:none") }}
                                     <div class="form-group">
                                         {{ compound.form.name.label(class_="control-label text-left") }}
                                         {{ compound.form.name(class_="name-input form-control") }}
@@ -112,13 +129,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-1" style="margin:auto;text-align:center;">
-                                <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="compound-{{ loop.index0 }}-remove">
-                                    <span class="fas fa-trash"></span>
-                                </button>
-                            </div>
                         </div>
                     {% endfor %}
+                    <div class="col-1" style="margin:auto;text-align:center;">
+                        <button type="button" class="btn btn-danger" id="delCompound">
+                            <span class="fas fa-trash"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="row bottom-div col-12">

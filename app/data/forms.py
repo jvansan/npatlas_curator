@@ -67,6 +67,6 @@ class ArticleForm(FlaskForm):
                                  validators=[DataRequired(), ValidateNumCompounds()])
     compounds = ModelFieldList(FormField(CompoundForm), model=Compound,
                                     min_entries=1)
-    add_compound = SubmitField('Add Compound')
+    # add_compound = SubmitField('Add Compound')
     submit = SubmitField('Submit Data')
     reject = SubmitField('Reject Article')

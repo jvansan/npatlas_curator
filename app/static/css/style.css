@@ -278,3 +278,7 @@ div.scrollmenu button {
 .compound-menu:hover {
     background-color: rgb(174, 179, 184);
 }
+
+#addCompound {
+    margin: 0px 0px 5px;
+}
