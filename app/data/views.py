@@ -6,6 +6,7 @@ from . import data
 from .. import db
 from .forms import ArticleForm
 from ..models import Article, Dataset, Compound, Curator, dataset_article
+from ..NoneDict import NoneDict
 
 
 def dataset_redirect(cur_id, ds_id):
@@ -242,7 +243,7 @@ def back_article():
 
 def save_data_to_article(article, data):
     # Save article data from POST
-    art = data['article']
+    art = NoneDict(data['article'])
     article.pmid = art['pmid']
     article.doi = art['doi']
     article.title = art['title']
@@ -259,6 +260,7 @@ def save_data_to_article(article, data):
     # Save compound data from POST
     actual_cmpds = []
     for cmpd in data['compounds']:
+        cmpd = NoneDict(cmpd)
         db_cmpd = None
         if cmpd['id']:
             db_cmpd = Compound.query.get_or_404(cmpd['id'])
