@@ -1,0 +1,72 @@
+<h2 id="introduction">Introduction</h2>
+<p>Thank you for participating in data curation for the Natural Product Atlas! The Atlas is available at <a href="npatlas.org" class="uri">npatlas.org</a>, please sign up and have a look around.</p>
+<p><br></p>
+<h2 id="faq">FAQ</h2>
+<h4 id="compounds">Compounds</h4>
+<p>Q: <em>“The reference for my compound is not about natural products. Should I reject this article?”</em></p>
+<p>A: Yes. We are curating on an article basis, so you can reject papers that do not report new microbial NPs.</p>
+<hr />
+<p>Q: <em>“This compound is in the paper as a new compound, but the structure is all garbled/ wrong”</em></p>
+<p>A: If the structure is corrupted, try and find the right structure from Pubchem and replace the SMILES string. If the structure doesn’t match the paper try searching Pubmed for structure revisions before correcting. This is a bit confusing, but we want the original isolation reference in all cases (even if the structure was subsequently revised). We will also find all reassignment references. If you have found a reassignment reference, please say his in the notes box, check ‘needs work’ and submit.</p>
+<hr />
+<p>Q: <em>“The double bonds in the structure have wiggly lines”</em></p>
+<p>A: This is a known bug in our software display tool. We’re working on it. It is OK to submit these.</p>
+<hr />
+<p>Q: <em>“Amide bonds in the structure look strange (wrong tautomer)”</em></p>
+<p>A: This is a problem that you need to fix. Please try to find the correct structure, or check ‘needs work’ and add ‘wrong tautomer’ in the notes field.</p>
+<hr />
+<p>Q: <em>“The compound has a water/ HCl/ second molecule/ MeOH in the image”</em></p>
+<p>A: We need to fix this. Please find the right SMILES and replace, or paste the SMILES into Chemdraw, fix, and copy the corrected SMILES back into the curator.</p>
+<hr />
+<p>Q: <em>“The paper contains both new and known compounds. Do you want me to add them all?”</em></p>
+<p>A: No thank you. We only want the new compounds. Sometimes it can be tricky to figure out what is new and what is known. Please read the introduction carefully if you are not sure.</p>
+<hr />
+<h4 id="citations">Citations</h4>
+<p>Q: <em>“The citation data is correct, but the doi is missing”</em></p>
+<p>A: This is OK. Click submit and move on. We will fix missing doi’s using an automated script.</p>
+<hr />
+<p>Q: <em>“Everything is OK, but the issue number is missing”</em></p>
+<p>A: This is OK. Click submit.</p>
+<hr />
+<p>Q: <em>“This is an ejournal that doesn’t have volume/ issue/ page numbers”</em></p>
+<p>A: Add the doi to the doi box and put the rest of the information in the page numbers box.</p>
+<hr />
+<p>Q: <em>“The author list also has a bunch of unrelated citation data in it”</em></p>
+<p>A: Please delete this. Author list should be authors only.</p>
+<hr />
+<h4 id="source-organisms">Source organisms</h4>
+<p>Q: <em>“The authors only report the taxonomy to the genus level”</em></p>
+<p>A: This is OK. Put ‘Streptomyces sp.’ (or whatever the genus is) in the source organism box.</p>
+<hr />
+<p>Q: <em>“The source fungus/ bacterium was not identified at all”</em></p>
+<p>A: Put ‘unknown bacterium’ (or fungus) in the source organism box.</p>
+<hr />
+<p>Q: <em>“The fungus is a plant endophyte. Should I include the plant in the list of sources?”</em></p>
+<p>A: No. We are only capturing data about the actual microbial source organisms.</p>
+<hr />
+<h4 id="fermentation-methods">Fermentation Methods</h4>
+<p>Q: <em>“Is culturing the same isolate under different fermentation conditions OK?”</em></p>
+<p>A: Yes, this is fine.</p>
+<hr />
+<p>Q: <em>“What about feeding cultures with NaBr to make brominated products?”</em></p>
+<p>A: This is in a grey area, but we decided to include these compounds.</p>
+<hr />
+<p>Q: <em>“What about the use of elicitors (e.g. HDAC inhibitors in fungal cultures) to induce new products?”</em></p>
+<p>A: These are OK.</p>
+<hr />
+<p>Q: <em>“What is the policy about co-culture?”</em></p>
+<p>A: Compounds derived from co-culture are fine. If the producing strain is known, just include this one in the source organism box. If it is not known which source organism produces it, include both source organisms as separate entries in the source organism box.</p>
+<hr />
+<h4 id="biosynthesis-genetic-manipulation">Biosynthesis/ genetic manipulation</h4>
+<p><strong>In general you should follow the rule that the NP Atlas only includes compounds if they could plausibly be found in nature.</strong></p>
+<p>Q: <em>“Should I include compounds from heterologous expression?”</em></p>
+<p>A: Yes. Provided that the work incorporated an entire biosynthetic gene cluster. In these cases, the source organism is the organism from which the cluster was derived (if known), or ‘eDNA’ if derived from DNA assemblages.</p>
+<hr />
+<p>Q: <em>“What about compounds made by feeding building blocks to cultures?”</em></p>
+<p>A: If the building block is natural (e.g. proteinogenic amino acids) that is OK. If it is non-natural (e.g. fluoro-phenylalanine) this should be rejected. If you are not sure, check ‘Needs work’ and put a comment in the comments field.</p>
+<hr />
+<p>Q: <em>“What about studies that delete/ activate regulators of biosynthetic machinery?”</em></p>
+<p>A: These are OK.</p>
+<hr />
+<p>Q: <em>“What about shunt products made by deleting enzymes in the pathway?”</em></p>
+<p>A: Nope. This is considered ‘non-natural’. It would be helpful if you could put ‘Biosynthetic engineering’ in the notes box in case we decide later on to go back and include these.</p>
