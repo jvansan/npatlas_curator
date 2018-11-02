@@ -358,6 +358,10 @@ function scrolltabDiv(rowNum) {
 }
 
 function deleteCompound(currentPath, compId) {
+    if ($(".compound-row").length == 1) {
+        alert("Cannot delete every compound from an article. Please add a real compound before deleting this one.")
+        return
+    }
     // Need to save article data and send to POST
     let article = {
         pmid: $("#pmid").val(),
