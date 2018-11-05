@@ -31,12 +31,12 @@
                         {% else %}
                             <td><a onclick="giveInstructions('{{ dataset.instructions }}')" href="{{ article_redirect(curator.id, dataset.id, dataset.articles[0].id) }}">Start Dataset</a></td>
                         {% endif %}
-                        <td> {{ dataset.articles|length }} </td>
+                        <td style="text-align: center"> {{ dataset.articles|length }} </td>
                         <td> <a href="{{ dataset_redirect(curator.id, dataset.id) }}">See all articles</a></td>
                         <td> {{ dataset.create_date }} </td>
 
                         <td> {{ dataset.last_edit_date }} </td>
-                        <td>
+                        <td style="text-align: center">
                             {% if dataset.completed %}
                                 <i class="far fa-check-circle green"></i>
                             {% else%}
