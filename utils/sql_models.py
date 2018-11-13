@@ -102,7 +102,6 @@ class Compound(Base):
     name = Column(String(255))
     smiles = Column(String(1000))
     source_organism = Column(String(255))
-    curated_compound = Column(Boolean, default=True)
     npaid = Column(Integer)
 
 # ORM Interface
