@@ -90,6 +90,7 @@ class Article(Base):
     notes = Column(Text)
     needs_work = Column(Boolean, default=False)
     is_nparticle = Column(Boolean, default=True)
+    npa_artid = Column(Integer)
 
 
 class Compound(Base):
@@ -101,11 +102,8 @@ class Compound(Base):
     name = Column(String(255))
     smiles = Column(String(1000))
     source_organism = Column(String(255))
-    cid = Column(Integer)
-    csid = Column(Integer)
-    cbid = Column(Integer)
     curated_compound = Column(Boolean, default=True)
-
+    npaid = Column(Integer)
 
 # ORM Interface
 class CuratorDB(object):

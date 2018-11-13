@@ -36,11 +36,7 @@ class CompoundForm(NoCsrfForm):
     smiles = StringField('SMILES', validators=[DataRequired()])
     source_organism = StringField('Source Organism',
                                    validators=[DataRequired()])
-    curated_compound = BooleanField('Compound Curated?')
-    cid = IntegerField('PubChem ID')
-    csid = IntegerField('ChemSpider ID')
-    cbid = IntegerField('ChEMBL ID')
-
+    npaid = IntegerField('Article in Atlas?')
 
 class ArticleForm(FlaskForm):
     """

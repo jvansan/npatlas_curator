@@ -113,6 +113,7 @@ class Article(db.Model):
     notes = db.Column(db.Text)
     needs_work = db.Column(db.Boolean, default=False)
     is_nparticle = db.Column(db.Boolean, default=True)
+    npa_artid = db.Column(db.Integer)
 
 
 class Compound(db.Model):
@@ -124,15 +125,4 @@ class Compound(db.Model):
     name = db.Column(db.String(255))
     smiles = db.Column(db.String(1000))
     source_organism = db.Column(db.String(255))
-    cid = db.Column(db.Integer)
-    csid = db.Column(db.Integer)
-    cbid = db.Column(db.Integer)
-    curated_compound = db.Column(db.Boolean, default=False)
-
-# THIS BREAKS TESTS
-# Clean up orphans
-# @db.event.listens_for(db.Session, 'after_flush')
-# def delete_compound_orphans(session, ctx):
-#     session.query(Compound).\
-#         filter(~Compound.article.any()).\
-#         delete(synchronize_session=False)
+    npaid = db.Column(db.Integer)
