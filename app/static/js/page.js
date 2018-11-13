@@ -52,7 +52,7 @@ $(document).ready(() => {
         let $this = $(this);
         let rowNum = parseInt($this.attr("id").split("-")[2]);
         let compoundName = $this.find("#compounds-"+rowNum+"-name").val();
-        let compoundKnown = $this.find("#compounds-"+rowNum+"-curated_compound").is(":checked");
+        let compoundKnown = $this.find("#compounds-"+rowNum+"-npaid").val();
         if (compoundName.length == 0) {
             compoundName = "Name";
         }
