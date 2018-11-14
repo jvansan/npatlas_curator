@@ -36,7 +36,7 @@ class CompoundForm(NoCsrfForm):
     smiles = StringField('SMILES', validators=[DataRequired()])
     source_organism = StringField('Source Organism',
                                    validators=[DataRequired()])
-    npaid = IntegerField('Article in Atlas?')
+    npaid = IntegerField('Article in Atlas?', validators=[Optional()])
 
 class ArticleForm(FlaskForm):
     """
