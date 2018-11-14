@@ -45,10 +45,7 @@ def get_article_compounds(form):
         db_cmpd.name = cmpd_form.name.data
         db_cmpd.smiles = cmpd_form.smiles.data
         db_cmpd.source_organism = cmpd_form.source_organism.data
-        db_cmpd.cid = cmpd_form.cid.data
-        db_cmpd.csid = cmpd_form.csid.data
-        db_cmpd.cbid = cmpd_form.cbid.data
-
+        
         if not db_cmpd.id:
             db.session.add(db_cmpd)
 
