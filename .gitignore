@@ -7,7 +7,6 @@ __pycache__
 
 
 # For playground purposes
-bleh/
-quick-setup-play-db.py
+curator_env/
 
 SECRET.txt

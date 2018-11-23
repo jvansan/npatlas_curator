@@ -3,6 +3,8 @@
 {% extends "base.html" %}
 {% block title %}Article{% endblock %}
 {% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='js/kekule/themes/default/kekule.css') }}">
+<script src="../../../static/js/kekule/kekule.js?modules=chemWidget,openbabel,indigo"></script>
 {% with messages = get_flashed_messages(with_categories=true) %}
   <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
   {% if messages %}
@@ -107,7 +109,11 @@
                         <div data-toggle="fieldset-entry" class="compound-row" id="compound-row-{{ loop.index0 }}" >
                             <div class="row">
                                 <div class="col-12" style="margin-left:auto;margin-right :auto;text-align:center;">
-                                    <canvas class='compound-canvas' id='compound-canvas-{{ loop.index0 }}' width="400px" height="400px"></canvas>
+                                    <div class='compound-canvas' id='compound-canvas-{{ loop.index0 }}' style="width:500px;height:500px"
+                                        data-widget="Kekule.ChemWidget.Viewer2D" data-enable-toolbar="true" data-auto-size="false" data-padding="20"
+                                        data-toolbar-evoke-modes="[0]" data-autofit="true" data-enable-edit="true">
+                                    </div>
+                                    <!-- <canvas class='compound-canvas' id='compound-canvas-{{ loop.index0 }}' width="400px" height="400px"></canvas> -->
                                     <h4 id="compound-formula-{{ loop.index0 }}" class="compound-formula"></h4>
                                 </div>
                             </div>
@@ -164,6 +170,7 @@
         </form>
     </div>
 </section>
+
 <script src="{{ url_for('static', filename='js/SmilesDrawer/dist/smiles-drawer.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/page.js') }}"></script>
 {% endblock %}

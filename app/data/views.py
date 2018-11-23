@@ -7,7 +7,10 @@ from .. import db
 from .forms import ArticleForm
 from ..models import Article, Dataset, Compound, Curator, dataset_article
 from ..NoneDict import NoneDict
+from ..indigo import *
 
+# Global IndigoOject Initialization
+indigo = Indigo()
 
 def dataset_redirect(cur_id, ds_id):
     return url_for('data.dataset', cur_id=cur_id, ds_id=ds_id)
@@ -325,3 +328,15 @@ def delete_compound():
     session['compound'] = idx - 1 if idx > 1 else 0
 
     return jsonify({'url': currentUrl})
+
+@data.route('/data/smiToMol', methods=["POST"])
+# @login_required
+def smilesToMolblock():
+    data = request.get_json()
+
+    try:
+        m = indigo.loadMolecule(data['smiles'])
+        m.layout()
+        return jsonify({'molblock': m.molfile(), 'success': 1})
+    except IndigoException:
+        return jsonify({'success': 0})
