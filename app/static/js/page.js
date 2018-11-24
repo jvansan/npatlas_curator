@@ -1,5 +1,5 @@
 $(document).ready(() => {
-
+    
     // For page to reload when the back button was used
     window.addEventListener( "pageshow", function ( event ) {
         var historyTraversal = event.persisted ||
@@ -15,42 +15,24 @@ $(document).ready(() => {
     const regex = /^10.\d{4,9}\//g;
     var currentPath = window.location.pathname
 
-    // Initialize SmilesDrawer
-    var options = {
-        width: 400,
-        height: 400
-    }
-    var smilesDrawer = new SmilesDrawer.Drawer(options);
-
     // Show all alerts except the one which arises when you add a new compound
-    $(".alert").each(function(idx) {
+    $(".alert").each(function() {
         if (!$(this).text().includes("Error in the Compounds field - {'name': ")) {
             $(this).show();
         }
     })
 
     // Draw compounds on page load
-    $(".smiles-input").each( function(idx) {
-        let $this = $(this);
-        let smiles = $this.val().trim()
-        console.log(idx + " " + smiles);
-        let $canvas = $("#compound-canvas-"+idx)
-        $canvas.attr("alt", smiles);
-        // $canvas.next().html()
-        // Parse and draw compound
-        SmilesDrawer.parse(smiles, function(tree) {
-            // console.log(tree);
-            smilesDrawer.draw(tree, "compound-canvas-" + idx, "light", false);
-            $canvas.next().text(smilesDrawer.getMolecularFormula());
-        }, function(err) {
-            console.log(err);
-        });
+    $(".smiles-input").each(function() {
+        let idx = get_idx($(this));
+        load_kekule(idx);
+        display(idx);
     });
 
     // Add tab buttons and menu items for each compound
     $(".compound-row").each( function() {
         let $this = $(this);
-        let rowNum = parseInt($this.attr("id").split("-")[2]);
+        let rowNum = get_idx($this)
         let compoundName = $this.find("#compounds-"+rowNum+"-name").val();
         let compoundKnown = $this.find("#compounds-"+rowNum+"-npaid").val();
         if (compoundName.length == 0) {
@@ -92,27 +74,21 @@ $(document).ready(() => {
     }
 
     // Smiles input event
-    $(".smiles-input").on("keyup", function() {
+    $(".smiles-input").on("blur", function() {
         let $this = $(this);
         let smiles = $this.val().trim();
         // console.log(smiles);
-        let rowNum = parseInt($this.attr("id").split("-")[1]);
+        let rowNum = get_idx($this)
         let $canvas = $("#compound-canvas-"+rowNum)
         $canvas.attr("alt", smiles);
         // console.log(smiles.length);
-        if (smiles.length == 0 ){
-            $canvas[0].getContext("2d").clearRect(0, 0, $canvas[0].width, $canvas[0].height);
-            $canvas.next().text(" ")
-        } else {
-        // Parse and draw compound
-        SmilesDrawer.parse(smiles, function(tree) {
-            // console.log(tree);
-            smilesDrawer.draw(tree, "compound-canvas-" + rowNum, "light", false);
-            $canvas.next().text(smilesDrawer.getMolecularFormula());
-        }, function(err) {
-            console.log(err);
-        });
-        }
+	display(rowNum)
+    });
+
+    // Compound structure was editted event
+    $(".compound-canvas").on("Kekule.ChemWidget.Viewer.load", function() {
+	console.log($(this));
+	console.log("There was a change!")
     });
 
     // Compound select from tabs
@@ -122,6 +98,7 @@ $(document).ready(() => {
         // Hide all compound rows first then show target
         $(".compound-row").hide();
         $target.show();
+        chemViewers[rowNum].resetDisplay();
         // Scroll tab to center
         scrolltabDiv(rowNum)
         // Make tab appear active
@@ -320,9 +297,11 @@ $(document).ready(() => {
             deleteCompound(currentPath, compId);
         }
     })
-
 // END jQUERY DOC READY
 });
+
+// Array of ChemViewer Objects
+var chemViewers = [];
 
 String.prototype.format = function () {
     var i = 0, args = arguments;
@@ -409,4 +388,53 @@ function deleteCompound(currentPath, compId) {
                 alert("Could not access server. Please contact admin.")
             }
     });
+}
+
+// Initialize viewer
+function load_kekule(idx) {
+    let canvas = $("#compound-canvas-{}".format(idx))
+    // console.log(canvas.get())
+    chemViewers.push(new Kekule.ChemWidget.Viewer(canvas.get(0)));
+}
+
+function display_kekule(smi, idx) {
+    displayAJAX(smi, idx);  
+}
+
+function display(idx) {
+    var smi = $("#compounds-{}-smiles".format(idx)).val().trim();
+    console.log(idx + ": " + smi);
+    display_kekule(smi, idx);
+}
+
+function get_idx(elem) {
+    let idx = elem.attr("id").match(/\d+/);
+    console.log(idx)
+    if (idx.length > 0) {
+        return idx[0]
+    } else {
+        return
+    }
+}
+
+function displayAJAX(smi, idx) {
+    $.ajax({
+        type: "POST",
+        url: "/data/smiToMol",
+        data: JSON.stringify({smiles: smi}),
+        contentType: "application/json; charset=utf-8",
+        success: function(retJson){
+            if (retJson['success'] != 1) {
+                alert("Unable to process SMILES.")
+            } else {
+                molb = retJson['molblock']
+                var mol = Kekule.IO.loadFormatData(molb, "mol");  
+                chemViewers[idx].setChemObj(mol);
+	        chemViewers[idx].resetDisplay();
+            }
+        },
+        error : function() {
+            alert("Unable to process SMILES.")
+        }
+    })
 }
