@@ -4,7 +4,7 @@ Thank you for participating in data curation for the Natural Product
 Atlas! The Atlas is available at [npatlas.org](npatlas.org), please
 sign up and have a look around.
 
-For an tutorial on how to use the Curator, watch [this video](https://youtu.be/DMpSUehCOI4)
+For a tutorial on how to use the Curator, watch [this video](https://youtu.be/DMpSUehCOI4).
 
 ## FAQ
 
