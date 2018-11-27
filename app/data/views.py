@@ -6,8 +6,8 @@ from . import data
 from .. import db
 from .forms import ArticleForm
 from ..models import Article, Dataset, Compound, Curator, dataset_article
-from ..NoneDict import NoneDict
-from ..indigo import *
+from ..utils.NoneDict import NoneDict
+from ..utils.indigo import *
 
 # Global IndigoOject Initialization
 indigo = Indigo()
@@ -48,7 +48,7 @@ def get_article_compounds(form):
         db_cmpd.name = cmpd_form.name.data
         db_cmpd.smiles = cmpd_form.smiles.data
         db_cmpd.source_organism = cmpd_form.source_organism.data
-        
+
         if not db_cmpd.id:
             db.session.add(db_cmpd)
 
