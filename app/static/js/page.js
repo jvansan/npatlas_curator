@@ -1,5 +1,5 @@
 $(document).ready(() => {
-    
+
     // For page to reload when the back button was used
     window.addEventListener( "pageshow", function ( event ) {
         var historyTraversal = event.persisted ||
@@ -14,6 +14,16 @@ $(document).ready(() => {
     // variables
     const regex = /^10.\d{4,9}\//g;
     var currentPath = window.location.pathname
+
+    // Define Kekule Toolbar preset
+    Kekule.ObjPropSettingManager.register('Kekule.ChemWidget.Viewer.customPreset', {
+        enableToolbar: true,
+        enableDirectInteracion: true,
+        enableEdit: false,
+        toolButtons: ['saveData', 'molDisplayType', 'zoomIn', 'zoomOut',
+                      'rotateLeft', 'rotateRight', 'reset'
+                    ]
+    })
 
     // Show all alerts except the one which arises when you add a new compound
     $(".alert").each(function() {
@@ -398,7 +408,7 @@ function load_kekule(idx) {
 }
 
 function display_kekule(smi, idx) {
-    displayAJAX(smi, idx);  
+    displayAJAX(smi, idx);
 }
 
 function display(idx) {
@@ -428,7 +438,7 @@ function displayAJAX(smi, idx) {
                 alert("Unable to process SMILES.")
             } else {
                 molb = retJson['molblock']
-                var mol = Kekule.IO.loadFormatData(molb, "mol");  
+                var mol = Kekule.IO.loadFormatData(molb, "mol");
                 chemViewers[idx].setChemObj(mol);
 	        chemViewers[idx].resetDisplay();
             }
