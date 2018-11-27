@@ -23,6 +23,8 @@
                 {% for article in articles.items %}
                     {% if not article.is_nparticle %}
                     <tr class="red-background">
+                    {% elif article.needs_work %}
+                    <tr class="yellow-background">
                     {% else %}
                     <tr>
                     {% endif%}
@@ -32,7 +34,7 @@
                         <td style="text-align: center">{{ article.compounds|length }}</td>
                         <td>{{ article.title }}</td>
                         <td style="text-align: center">
-                            {% if article.completed and not article.needs_work %}
+                            {% if article.completed %}
                                 <i class="far fa-check-circle green"></i>
                             {% else %}
                                 <i class="far fa-times-circle red"></i>
@@ -61,7 +63,10 @@
         </div>
     {% endif%}
     <div>
-        <p>Note: An article highlighted with a red background indicates an article which has been flagged as not about natural product isolation.</p>
+        <p>
+            <b>Note:</b> An article highlighted with a yellow background indicates an article which has been flagged as
+            "Needs Work", while a red background indicates an article which has been flagged as not about natural product isolation.
+        </p>
     </div>
 </section>
 {% endblock %}
