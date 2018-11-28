@@ -7,10 +7,8 @@ from .. import db
 from .forms import ArticleForm
 from ..models import Article, Dataset, Compound, Curator, dataset_article
 from ..utils.NoneDict import NoneDict
-from ..utils.indigo import *
+from rdkit.Chem import AllChem as Chem
 
-# Global IndigoOject Initialization
-indigo = Indigo()
 
 def dataset_redirect(cur_id, ds_id):
     return url_for('data.dataset', cur_id=cur_id, ds_id=ds_id)
@@ -333,10 +331,13 @@ def delete_compound():
 @login_required
 def smilesToMolblock():
     data = request.get_json()
-
+    smiles = data.get("smiles")
     try:
-        m = indigo.loadMolecule(data['smiles'])
-        m.layout()
-        return jsonify({'molblock': m.molfile(), 'success': 1})
+        m = Chem.MolFromSmiles(smiles)
+        Chem.AddHs(m)
+        Chem.Compute2DCoords(m)
+        Chem.RemoveHs(m)
+        molblock = Chem.MolToMolBlock(m)
+        return jsonify({'molblock': molblock, 'success': 1})
     except IndigoException:
         return jsonify({'success': 0})
