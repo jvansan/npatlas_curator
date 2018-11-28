@@ -4,6 +4,8 @@ instance/
 __pycache__
 .vscode
 .pytest_cache
+.coverage
+htmlcov/
 
 
 # For playground purposes

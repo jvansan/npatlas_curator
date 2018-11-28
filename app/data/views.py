@@ -330,7 +330,7 @@ def delete_compound():
     return jsonify({'url': currentUrl})
 
 @data.route('/data/smiToMol', methods=["POST"])
-# @login_required
+@login_required
 def smilesToMolblock():
     data = request.get_json()
 

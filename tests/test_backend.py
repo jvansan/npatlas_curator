@@ -54,8 +54,7 @@ class TestModels(TestBase):
         # create compound and add to db
         cmpd = Compound(name='Methane',
                         smiles='C',
-                        source_organism='Saccharomyces cerevisiae',
-                        cid=0, csid=0, cbid=0)
+                        source_organism='Saccharomyces cerevisiae')
         db.session.add(cmpd)
         db.session.commit()
 
@@ -82,8 +81,7 @@ class TestModels(TestBase):
         # Create compound
         cmpd = Compound(name='Methane',
                         smiles='C',
-                        source_organism='Saccharomyces cerevisiae',
-                        cid=0, csid=0, cbid=0)
+                        source_organism='Saccharomyces cerevisiae')
         # Create article with compound
         art = Article(pmid=12345, journal='Test Journal',
                       year=2018, volume='12', issue='12',
@@ -144,8 +142,7 @@ class TestModels(TestBase):
         # Create compound
         cmpd = Compound(name='Methane',
                         smiles='C',
-                        source_organism='Saccharomyces cerevisiae',
-                        cid=0, csid=0, cbid=0)
+                        source_organism='Saccharomyces cerevisiae')
         # Create article with compound
         art = Article(pmid=12345, journal='Test Journal',
                       year=2018, volume='12', issue='12',
@@ -197,7 +194,7 @@ class TestViews(TestBase):
         Test that dashboard link is inaccessible without login
         and redirects to login page
         """
-        target_url = url_for('data.curator_dashboard', id=1)
+        target_url = url_for('data.curator_dashboard', cur_id=1)
         redirect_url = url_for('auth.login', next=target_url)
         response = self.client.get(target_url)
         self.assertEqual(response.status_code, 302)
