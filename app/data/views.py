@@ -1,62 +1,18 @@
 from flask import (abort, flash, redirect, render_template, url_for,
-                   request, jsonify, session)
+                   request, jsonify, session, current_app)
 from flask_login import current_user, login_required
+from rdkit.Chem import AllChem as Chem
 
 from . import data
 from .. import db
 from .forms import ArticleForm
 from ..models import Article, Dataset, Compound, Curator, dataset_article
-from ..NoneDict import NoneDict
-from ..indigo import *
-
-# Global IndigoOject Initialization
-indigo = Indigo()
-
-def dataset_redirect(cur_id, ds_id):
-    return url_for('data.dataset', cur_id=cur_id, ds_id=ds_id)
-
-def article_redirect(cur_id, ds_id, art_id):
-    return url_for('data.article', cur_id=cur_id, ds_id=ds_id, art_id=art_id)
-
-def flash_errors(form):
-    for field, errors in form.errors.items():
-        for error in errors:
-            flash(u"Error in the %s field - %s" % (
-                getattr(form, field).label.text,
-                error
-            ), 'danger')
-
-def try_dbcommit():
-    try:
-        db.session.commit()
-        # flash('Data saved!')
-    except:
-        db.session.rollback()
-        flash('Error sending data to database... Please contact us!')
-
-def get_article_compounds(form):
-    actual_cmpds = []
-    for cmpd in form.compounds:
-        cmpd_form = cmpd.form
-        db_cmpd = None
-        if cmpd_form.id.data:
-            db_cmpd = Compound.query.get(cmpd_form.id.data)
-
-        if not db_cmpd:
-            db_cmpd = Compound()
-
-        db_cmpd.name = cmpd_form.name.data
-        db_cmpd.smiles = cmpd_form.smiles.data
-        db_cmpd.source_organism = cmpd_form.source_organism.data
-        
-        if not db_cmpd.id:
-            db.session.add(db_cmpd)
-
-        actual_cmpds.append(db_cmpd)
-
-    return actual_cmpds
+from ..utils.NoneDict import NoneDict
 
 
+#####################################################################
+###                      SERVER VIEWS/METHODS                     ###
+#####################################################################
 @data.route('/data/curator<int:cur_id>')
 @login_required
 def curator_dashboard(cur_id):
@@ -70,7 +26,8 @@ def curator_dashboard(cur_id):
     if not current_user.is_admin and cur_id != current_user.id:
         abort(403)
 
-    datasets = Dataset.query.order_by(Dataset.id.desc()).filter_by(curator_id=cur_id).all()
+    datasets = Dataset.query.order_by(Dataset.id.desc())\
+               .filter_by(curator_id=cur_id).all()
 
     return render_template('data/dashboard.html', title='Data Dashboard',
                            datasets=datasets, curator=curator,
@@ -124,7 +81,8 @@ def article(cur_id, ds_id, art_id):
     article = Article.query.get_or_404(art_id)
     # Flash Error About Non-NP Article
     if not article.is_nparticle:
-        flash("Article previously flagged as not about natural product isolation!", "danger")
+        flash("Article previously flagged as not about natural product isolation!",
+              "danger")
     # Get dataset from DB
     dataset = Dataset.query.get_or_404(ds_id)
 
@@ -159,7 +117,7 @@ def article(cur_id, ds_id, art_id):
 
         # Session tracking
         article.completed = True
-        if len([art for art in dataset.articles if art.completed and not art.needs_work]) == len(dataset.articles):
+        if len([art for art in dataset.articles if art.completed]) == len(dataset.articles):
             dataset.completed = True
             flash('Dataset completed!!')
         elif dataset.articles.index(article) == len(dataset.articles) - 1:
@@ -241,39 +199,6 @@ def back_article():
         returnUrl = '/'.join(urlSplit[:3] + [f"article{prev_art_id}"])
     return jsonify({'url': returnUrl})
 
-def save_data_to_article(article, data):
-    # Save article data from POST
-    art = NoneDict(data['article'])
-    article.pmid = art['pmid']
-    article.doi = art['doi']
-    article.title = art['title']
-    article.journal = art['journal']
-    article.authors = art['authors']
-    article.abstract = art['abstract']
-    article.year = art['year']
-    article.pages = art['pages']
-    article.volume = art['vol']
-    article.issue = art['iss']
-    article.num_compounds = art['num_compounds']
-    article.needs_work = art['needs_work']
-    article.notes = art['notes']
-    # Save compound data from POST
-    actual_cmpds = []
-    for cmpd in data['compounds']:
-        cmpd = NoneDict(cmpd)
-        db_cmpd = None
-        if cmpd['id']:
-            db_cmpd = Compound.query.get_or_404(cmpd['id'])
-
-        db_cmpd.name = cmpd['name']
-        db_cmpd.smiles = cmpd['smiles']
-        db_cmpd.source_organism = cmpd['source_organism']
-        db_cmpd.curated_compounds = cmpd['curated_compound']
-
-        actual_cmpds.append(db_cmpd)
-    article.compounds = actual_cmpds
-
-    return article
 
 @data.route('/data/addCompound', methods=['POST'])
 @login_required
@@ -330,13 +255,102 @@ def delete_compound():
     return jsonify({'url': currentUrl})
 
 @data.route('/data/smiToMol', methods=["POST"])
-# @login_required
+@login_required
 def smilesToMolblock():
     data = request.get_json()
-
+    smiles = data.get("smiles")
     try:
-        m = indigo.loadMolecule(data['smiles'])
-        m.layout()
-        return jsonify({'molblock': m.molfile(), 'success': 1})
-    except IndigoException:
+        m = Chem.MolFromSmiles(smiles)
+        Chem.AddHs(m)
+        Chem.Compute2DCoords(m)
+        Chem.RemoveHs(m)
+        molblock = Chem.MolToMolBlock(m)
+        current_app.logger.info("Successfully coverted SMILES %s to MOLblock",
+                                smiles)
+        return jsonify({'molblock': molblock, 'success': 1})
+    except Exception as e:
+        current_app.logger.error("%s: %s", type(e).__name__, e)
+        current_app.logger.error("Unable to convert SMILES %s to MOLblock",
+                                 smiles)
         return jsonify({'success': 0})
+
+#####################################################################
+###                      HELPER FUNCTIONS                         ###
+#####################################################################
+def save_data_to_article(article, data):
+    # Save article data from POST
+    art = NoneDict(data['article'])
+    article.pmid = art['pmid']
+    article.doi = art['doi']
+    article.title = art['title']
+    article.journal = art['journal']
+    article.authors = art['authors']
+    article.abstract = art['abstract']
+    article.year = art['year']
+    article.pages = art['pages']
+    article.volume = art['vol']
+    article.issue = art['iss']
+    article.num_compounds = art['num_compounds']
+    article.needs_work = art['needs_work']
+    article.notes = art['notes']
+    # Save compound data from POST
+    actual_cmpds = []
+    for cmpd in data['compounds']:
+        cmpd = NoneDict(cmpd)
+        db_cmpd = None
+        if cmpd['id']:
+            db_cmpd = Compound.query.get_or_404(cmpd['id'])
+
+        db_cmpd.name = cmpd['name']
+        db_cmpd.smiles = cmpd['smiles']
+        db_cmpd.source_organism = cmpd['source_organism']
+        db_cmpd.curated_compounds = cmpd['curated_compound']
+
+        actual_cmpds.append(db_cmpd)
+    article.compounds = actual_cmpds
+
+    return article
+
+def dataset_redirect(cur_id, ds_id):
+    return url_for('data.dataset', cur_id=cur_id, ds_id=ds_id)
+
+def article_redirect(cur_id, ds_id, art_id):
+    return url_for('data.article', cur_id=cur_id, ds_id=ds_id, art_id=art_id)
+
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"Error in the %s field - %s" % (
+                getattr(form, field).label.text,
+                error
+            ), 'danger')
+
+def try_dbcommit():
+    try:
+        db.session.commit()
+        # flash('Data saved!')
+    except:
+        db.session.rollback()
+        flash('Error sending data to database... Please contact us!')
+
+def get_article_compounds(form):
+    actual_cmpds = []
+    for cmpd in form.compounds:
+        cmpd_form = cmpd.form
+        db_cmpd = None
+        if cmpd_form.id.data:
+            db_cmpd = Compound.query.get(cmpd_form.id.data)
+
+        if not db_cmpd:
+            db_cmpd = Compound()
+
+        db_cmpd.name = cmpd_form.name.data
+        db_cmpd.smiles = cmpd_form.smiles.data
+        db_cmpd.source_organism = cmpd_form.source_organism.data
+
+        if not db_cmpd.id:
+            db.session.add(db_cmpd)
+
+        actual_cmpds.append(db_cmpd)
+
+    return actual_cmpds
