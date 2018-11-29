@@ -17,7 +17,15 @@ from ..utils.pubchem_smiles_standardizer import get_standardized_smiles
 class Compound(object):
 
     def __init__(self, smiles, **kwargs):
-        """create Compound object
+        """Initialize Compound object
+
+            :smiles (str) - Input smiles string for compound object
+
+            kwargs:
+            :name (str) - Default = "Unknown" - Name of compound, also sets
+                          name in Molblock
+            :standardize (bool) - Default = True - Control whether SMILES is
+                                  subject to PubChem Standardization attempt
         """
 
         # Standardize as a kwarg to allow disabling PubChem Standardization
@@ -78,6 +86,7 @@ class Compound(object):
         First: Strip salts
         Second: Second, check for fragments
         """
+        Chem.rdmolops.Cleanup(self.rdmol)
         neutralized = self._neutralizeMol()
         defragmented = self._getLargestFragment()
         if neutralized or defragmented:

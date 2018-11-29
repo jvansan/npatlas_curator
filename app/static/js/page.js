@@ -1,5 +1,4 @@
 $(document).ready(() => {
-
     // For page to reload when the back button was used
     window.addEventListener( "pageshow", function ( event ) {
         var historyTraversal = event.persisted ||
@@ -92,13 +91,7 @@ $(document).ready(() => {
         let $canvas = $("#compound-canvas-"+rowNum)
         $canvas.attr("alt", smiles);
         // console.log(smiles.length);
-	display(rowNum)
-    });
-
-    // Compound structure was editted event
-    $(".compound-canvas").on("Kekule.ChemWidget.Viewer.load", function() {
-	console.log($(this));
-	console.log("There was a change!")
+	    display(rowNum)
     });
 
     // Compound select from tabs
@@ -310,6 +303,13 @@ $(document).ready(() => {
 // END jQUERY DOC READY
 });
 
+// Hide content until loaded
+function show() {
+    $("#loading").hide();
+    $("#main").fadeIn();
+    // display(0);
+}
+
 // Array of ChemViewer Objects
 var chemViewers = [];
 
@@ -419,7 +419,7 @@ function display(idx) {
 
 function get_idx(elem) {
     let idx = elem.attr("id").match(/\d+/);
-    console.log(idx)
+    // console.log(idx)
     if (idx.length > 0) {
         return idx[0]
     } else {

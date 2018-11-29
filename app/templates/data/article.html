@@ -31,6 +31,11 @@
     <!-- Hidden form with compound id if session compId -->
     <input id="session-compId" type="hidden" style="display: none" value="{{ compId }}">
 {% endif %}
+<!-- Loading div -->
+<div id="loader-box">
+    <h1 class="text-center" style="color: #f3f3f3">Loading...</h1>
+    <div id="loader"></div>
+</div>
 <section class="container-fluid">
     <div class="row">
         <div class="col-lg-7 left-div">
@@ -167,11 +172,20 @@
                     </div>
                 </div>
             </div>
-
         </form>
     </div>
 </section>
+<script>
+document.getElementsByName("body").onload = myFunction()
 
-<script src="{{ url_for('static', filename='js/SmilesDrawer/dist/smiles-drawer.min.js') }}"></script>
+function myFunction() {
+    setTimeout(showPage, 100 * (2 - 1*Math.random()));
+}
+
+function showPage() {
+  document.getElementById("loader").style.display = "none";
+  document.getElementById("loader-box").style.display = "none";
+}
+</script>
 <script src="{{ url_for('static', filename='js/page.js') }}"></script>
 {% endblock %}
