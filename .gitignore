@@ -6,9 +6,10 @@ __pycache__
 .pytest_cache
 .coverage
 htmlcov/
+dump.sql
+mysql-dumps/*sql
 
 
 # For playground purposes
 curator_env/
 
-SECRET.txt

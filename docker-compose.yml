@@ -1,0 +1,42 @@
+version: '3'
+
+volumes:
+  curator_data:
+
+services:
+  mysql:
+    image: mysql/mysql-server:5.7
+    container_name: mysql_container
+    ports: 
+      - 3306:3306
+    environment: 
+      MYSQL_DATABASE: npatlas_curation
+      MYSQL_USER: jvansan
+      MYSQL_PASSWORD: password
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    volumes:
+      - curator_data:/var/lib/mysql
+  curator:
+    image: curator
+    container_name: curator_container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3031:3031
+    links: 
+      - mysql:dbserver
+    environment: 
+      DBHOST: dbserver
+  nginx:
+    image: my-nginx
+    container_name: nginx_container
+    ports:
+      - 80:80
+    links:
+      - curator
+    build:
+      context: ./my-nginx
+      dockerfile: Dockerfile
+      # args:
+      #   SERVER_NAME: npatlas-curate.chem.sfu.ca
