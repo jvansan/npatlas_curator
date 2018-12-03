@@ -1,4 +1,4 @@
-from flask import render_template, abort
+from flask import render_template, abort, send_from_directory
 from flask_login import current_user, login_required
 
 from . import home
@@ -28,3 +28,8 @@ def admin_dashboard():
         abort(403)
 
     return render_template('home/admin_dashboard.html', title="Dashboard")
+
+
+@home.route('/robots.txt')
+def static_from_root():
+    return send_from_directory(app.static, request.path[1:])
