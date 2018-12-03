@@ -303,12 +303,6 @@ $(document).ready(() => {
 // END jQUERY DOC READY
 });
 
-// Hide content until loaded
-function show() {
-    $("#loading").hide();
-    $("#main").fadeIn();
-    // display(0);
-}
 
 // Array of ChemViewer Objects
 var chemViewers = [];

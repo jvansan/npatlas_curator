@@ -172,7 +172,7 @@ def next_article():
     else:
         next_dataset_idx = current_dataset_idx + 1
         next_art_id = dataset.articles[next_dataset_idx].id
-        returnUrl = '/'.join(urlSplit[:3] + [f"article{next_art_id}"])
+        returnUrl = '/'.join(urlSplit[:3] + ["article{}".format(next_art_id)])
     return jsonify({'url': returnUrl})
 
 
@@ -196,7 +196,7 @@ def back_article():
     else:
         prev_dataset_idx = current_dataset_idx - 1
         prev_art_id = dataset.articles[prev_dataset_idx].id
-        returnUrl = '/'.join(urlSplit[:3] + [f"article{prev_art_id}"])
+        returnUrl = '/'.join(urlSplit[:3] + ["article{}".format(prev_art_id)])
     return jsonify({'url': returnUrl})
 
 
