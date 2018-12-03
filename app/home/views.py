@@ -32,4 +32,4 @@ def admin_dashboard():
 
 @home.route('/robots.txt')
 def static_from_root():
-    return send_from_directory(app.static, request.path[1:])
+    return send_from_directory('static', 'robots.txt')
