@@ -25,7 +25,11 @@
                         {% if dataset.articles|length == 0 %}
                             <td> <em>No Articles</em> </td>
                         {% elif dataset.completed %}
-                            <td> <em><b>Dataset completed</b></em> </td>
+                            {% if dataset.training %}
+                                <td> <em><b>Dataset completed</b> <a href="{{ training_score_redirect(curator.id, dataset.id) }}"> [SEE REPORT]</a> </em> </td>
+                            {% else %}
+                                <td> <em><b>Dataset completed</b></em> </td>
+                            {% endif %}
                         {% elif dataset.last_article_id %}
                             <td><a onclick="giveInstructions('{{ dataset.instructions }}')" href="{{ article_redirect(curator.id, dataset.id, dataset.last_article_id) }}">Resume Dataset</a></td>
                         {% else %}
