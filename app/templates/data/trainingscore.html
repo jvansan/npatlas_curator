@@ -1,0 +1,33 @@
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Training Set Score{% endblock %}
+{% block body%}
+<section class="container-fluid">
+    <div class="container">
+        <h1 style="text-align:center;">Training Set Score</h1>
+        <hr class="intro-divider">
+        <br>
+        <h1 style="text-align:center;">
+            {% if score > 8 %}
+                <span style="color: green">{{ score }}</span> / 10
+            {% elif score > 5 %}
+                <span style="color: yellow">{{ score }}</span> / 10
+            {% else %}
+                <span style="color: red">{{ score }}</span> / 10
+            {% endif %}
+        </h1>
+        <hr class="full-divider">
+        {% for err in errors %}
+            <div class="center">
+                <h4>Article: <a href='{{ article_redirect(cur_id, ds_id, err.artid) }}'>{{ err.artid }}</a></h4>
+                <h4>Type: {{ err.type }}</h4>
+                <h5>Expected:</h5>
+                <p>{{ err.expected }}</p>
+                <h5>Actual:</h5>
+                <p>{{ err.actual }}</p>
+                <br>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
