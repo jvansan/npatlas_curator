@@ -134,6 +134,7 @@ def article(cur_id, ds_id, art_id):
         try_dbcommit()
         # Clear session cookie
         session.pop('compound', None)
+        session.pop('_flashes', None)
 
         if dataset.completed or skip:
             return redirect(url_for('data.curator_dashboard',

@@ -279,7 +279,7 @@ $(document).ready(() => {
         $tab = $("button.compound-tab.active");
         let rowNum = $tab.attr("id").split("-")[2];
         let compId = $("#compounds-{}-id".format(rowNum)).val();
-        if ($("#compounds-{}-curated_compound".format(rowNum)).is(":checked")) {
+        if ($("#compounds-{}-npaid".format(rowNum)).val() != "") {
             $("#dialog-confirm").removeAttr("style");
             $("#dialog-confirm").dialog({
                 resizable: false,
