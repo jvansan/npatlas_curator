@@ -1,0 +1,80 @@
+{
+    "1": {
+        "count": 1,
+        "reject": false,
+        "names": ["Chaetoglobosin P"]
+    },
+    "2": {
+        "count": 2,
+        "reject": false,
+        "names": [
+            "Mevinolinic acid",
+            "Mevinolin"
+        ]
+    },
+    "3": {
+        "count": 2,
+        "reject": false,
+        "names": [
+            "Furaquinocin A",
+            "Furaquinocin B"
+        ]
+    },
+    "4": {
+        "count": 4,
+        "reject": false,
+        "names": [
+            "Neosartoryadin A",
+            "Neosartoryadin B",
+            "Fiscalin E",
+            "Fiscalin F"
+        ]
+    },
+    "5": {
+        "count": 2,
+        "reject": false,
+        "names": [
+            "Oxotomaymycin",
+            "Tomaymycin"
+        ]
+    },
+    "6": {
+        "count": null,
+        "reject": true,
+        "names": []
+    },
+
+    "7": {
+        "count": 2,
+        "reject": false,
+        "names": [
+            "Nostocyclophane D",
+            "Cylindrocyclophane A"
+        ]
+    },
+    "8": {
+        "count": 1,
+        "reject": false,
+        "names": [
+            "Gibberellin A25"
+        ]
+    },
+    "9": {
+        "count": 4,
+        "reject": false,
+        "names": [
+            "6-Methoxy-8<2'-methoxy-4'(3''-methyl-2''-butenyl)phenoxy>2,2-dimethylchromene",
+            "6-Methoxy-8<6'-hydroxy-2'-methoxy-4'(3''-methyl-2''-butenyl)phenyl>2,2-dimethylchromene",
+            "8,8'-Bis(6-methoxy-2,2-dimethylchromene)",
+            "6-Methoxy-8<6'-hydroxy-2'-methoxy-4'(3''-methyl-2''-butenyl)phenoxy>2,2-dimethylchromene"
+        ]
+    },
+    "10": {
+        "count": 2,
+        "reject": false,
+        "names": [
+            "7-hydroxyergosterol",
+            "Not named"
+        ]
+    }
+}

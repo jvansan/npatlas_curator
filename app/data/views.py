@@ -1,3 +1,6 @@
+import os
+import json
+from collections import Counter
 from flask import (abort, flash, redirect, render_template, url_for,
                    request, jsonify, session, current_app)
 from flask_login import current_user, login_required
@@ -17,7 +20,7 @@ from ..utils.NoneDict import NoneDict
 @login_required
 def curator_dashboard(cur_id):
     """
-    Render data dashboard tempate at '/data/curator<int:id>'
+    Render data dashboard template at '/data/curator<int:id>'
     """
     # Get curator from DB
     curator = Curator.query.get_or_404(cur_id)
@@ -32,7 +35,94 @@ def curator_dashboard(cur_id):
     return render_template('data/dashboard.html', title='Data Dashboard',
                            datasets=datasets, curator=curator,
                            article_redirect=article_redirect,
-                           dataset_redirect=dataset_redirect)
+                           dataset_redirect=dataset_redirect,
+                           training_score_redirect=training_score_redirect)
+
+
+@data.route('/data/curator<int:cur_id>/dataset<int:ds_id>/trainingscore',
+            methods=['GET', 'POST'])
+@login_required
+def trainingscore(cur_id, ds_id):
+    """Score and render training set diffs at '/data/curator<int:id>/dataset<int:ds_id>/traningset'"""
+    # Check that scoring scheme JSON exists
+    # load it if it does
+    # Throw 500 error if not
+    ts_path = os.path.join('app','static','training-set.json')
+    current_app.logger.debug("Loading training set solutions, {}".format(ts_path))
+    if not os.path.isfile(ts_path):
+        current_app.logger.debug("Training set file could not be loaded")
+        abort(500)
+    else:
+        with open(ts_path, 'r') as f:
+            training_set_data = json.load(f)
+        current_app.logger.debug("Successfully got training set solutions")
+
+    # Get dataset
+    dataset = Dataset.query.get_or_404(ds_id)
+
+    # Check user is allowed to access dataset
+    if dataset.curator_id != current_user.id and not current_user.is_admin:
+        abort(403)
+
+    # Check dataset is actually training set
+    if not dataset.training:
+        abort(404)
+
+    current_app.logger.debug("Starting scoring dataset.")
+    # Iterate over dataset and make scoring comparisons
+    score = 10
+    errors = []
+    for idx, art in enumerate(dataset.articles):
+        minus_score = 0
+        training_solution = training_set_data.get("{}".format(idx+1))
+        if not training_solution:
+            current_app.logger.error("Could not get the correct solution...")
+
+        # Make sure article was accepted or rejected correctly
+        if art.is_nparticle != (not training_solution.get("reject")):
+            current_app.logger.debug("Incorrect IS NPARTICLE")
+            errors.append({
+                "artid": art.id,
+                "type": "Article Rejected",
+                "expected": training_solution.get("reject"),
+                "actual": not art.is_nparticle
+            })
+            minus_score += 1
+
+        # Ignore the rest of scoring for rejected articles
+        if not training_solution.get("reject"):
+            # Make sure compound count is correct
+            if art.num_compounds != training_solution.get("count"):
+                current_app.logger.debug("Incorrect Compound Count")
+                errors.append({
+                    "artid": art.id,
+                    "type": "Compound Count",
+                    "expected": training_solution.get("count"),
+                    "actual": art.num_compounds
+                })
+                minus_score += 1
+
+            # Check names match
+            names = [x.name for x in art.compounds]
+            if Counter(names) != Counter(training_solution.get("names")):
+                current_app.logger.debug("Incorrect Compound Name")
+                errors.append({
+                    "artid": art.id,
+                    "type": "Incorrect Compound Name(s)",
+                    "expected": training_solution.get("names"),
+                    "actual": names
+                })
+                minus_score += 1
+
+        if minus_score >= 1:
+            score = score - 1
+    current_app.logger.debug("Completed scoring dataset")
+    current_app.logger.debug("Score for {} was {}/10".format(current_user.username, score))
+
+    return render_template("data/trainingscore.html", title="Training Set Score",
+                           cur_id=cur_id, ds_id=ds_id,
+                           score=score, errors=errors,
+                           article_redirect=article_redirect)
 
 
 @data.route('/data/curator<int:cur_id>/dataset<int:ds_id>',
@@ -47,7 +137,6 @@ def dataset(cur_id, ds_id):
 
     # Get dataset from DB
     dataset = Dataset.query.get_or_404(ds_id)
-
 
     # Check user is allows to access dataset
     if dataset.curator_id != current_user.id and not current_user.is_admin:
@@ -134,10 +223,17 @@ def article(cur_id, ds_id, art_id):
         try_dbcommit()
         # Clear session cookie
         session.pop('compound', None)
+        session.pop('_flashes', None)
 
         if dataset.completed or skip:
-            return redirect(url_for('data.curator_dashboard',
-                            cur_id=current_user.id))
+            if dataset.training:
+                return redirect(url_for('data.trainingscore',
+                                cur_id=current_user.id,
+                                ds_id=ds_id))
+            else:
+                return redirect(url_for('data.curator_dashboard',
+                                cur_id=current_user.id))
+
         else:
             return redirect(url_for('data.article', cur_id=cur_id,
                                     ds_id=ds_id, art_id=next_art_id))
@@ -313,6 +409,9 @@ def save_data_to_article(article, data):
 
 def dataset_redirect(cur_id, ds_id):
     return url_for('data.dataset', cur_id=cur_id, ds_id=ds_id)
+
+def training_score_redirect(cur_id, ds_id):
+    return url_for('data.trainingscore', cur_id=cur_id, ds_id=ds_id)
 
 def article_redirect(cur_id, ds_id, art_id):
     return url_for('data.article', cur_id=cur_id, ds_id=ds_id, art_id=art_id)
