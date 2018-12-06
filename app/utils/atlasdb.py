@@ -40,19 +40,19 @@ compound_reassignment = Table('compound_has_reassignment', Base.metadata,
                               mysql_charset='utf8'
                               )
 
-compound_synthesis = Table('compound_has_synthesis', Base.metadata,
-                           Column('compound_compound_id', Integer,
-                                  ForeignKey('compound.compound_id'),
-                                  primary_key=True),
-                           Column('reference_reference_id', Integer,
-                                  ForeignKey('reference.reference_id'),
-                                  primary_key=True),
-                           Column('synthesis_synthesis_id', Integer,
-                                  ForeignKey('synthesis.synthesis_id'),
-                                  primary_key=True),
-                           mysql_engine='InnoDB',
-                           mysql_charset='utf8'
-                           )
+# compound_synthesis = Table('compound_has_synthesis', Base.metadata,
+#                            Column('compound_compound_id', Integer,
+#                                   ForeignKey('compound.compound_id'),
+#                                   primary_key=True),
+#                            Column('reference_reference_id', Integer,
+#                                   ForeignKey('reference.reference_id'),
+#                                   primary_key=True),
+#                            Column('synthesis_synthesis_id', Integer,
+#                                   ForeignKey('synthesis.synthesis_id'),
+#                                   primary_key=True),
+#                            mysql_engine='InnoDB',
+#                            mysql_charset='utf8'
+#                            )
 
 
 # CompoundOrigin Association Object
@@ -69,6 +69,19 @@ class CompoundOrigin(Base):
                           ForeignKey('reference.reference_id'),
                           primary_key=True)
     original_isolation_reference = Column(Integer, default=1)
+
+class CompoundSynthesis(Base):
+    __tablename__ = "compound_has_synthesis"
+    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
+    compound_id = Column('compound_compound_id', Integer,
+                         ForeignKey('compound.compound_id'),
+                         primary_key=True)
+    synthesis_id = Column('synthesis_synthesis_id', Integer,
+                       ForeignKey('synthesis.synthesis_id'),
+                       primary_key=True)
+    reference_id = Column('reference_reference_id', Integer,
+                          ForeignKey('reference.reference_id'),
+                          primary_key=True)
 
 
 # Compound Information Section
@@ -92,7 +105,8 @@ class Compound(Base):
     cluster_id = Column('compound_cluster_id', Integer)
     node_id = Column('compound_node_id', Integer)
     names = relationship('Name', secondary=compound_name,
-                         back_populates='compounds')
+                         back_populates='compounds',
+                         lazy="joined")
     curation_data = relationship('CurationData')
     db_ids = relationship('ExternalDB')
     # origin = relationship('Origin', secondary='compound_has_origin',
@@ -241,7 +255,7 @@ class JournalAbbreviation(Base):
     journal = relationship('Journal', back_populates='abbrev')
 
 
-# Sythesis Data Section
+# Synthesis Data Section
 class Synthesis(Base):
     __tablename__ = 'synthesis'
     __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
@@ -273,6 +287,7 @@ class AtlasDB(object):
     JournalAbbreviation = JournalAbbreviation
     Synthesis = Synthesis
     CompoundOrigin = CompoundOrigin
+    CompoundSynthesis = CompoundSynthesis
 
     def dbInit(self, dbtype, user, passwd, host, dbname):
         """Initialize DB to a given connection
@@ -287,7 +302,8 @@ class AtlasDB(object):
         # engine.execute("CREATE DATABASE IF NOT EXISTS {0} CHARACTER SET utf8"
         #         .format(dbname))
         self.engine = create_engine('{0}://{1}:{2}@{3}/{4}'.format(
-            dbtype, user, passwd, host, dbname))
+            dbtype, user, passwd, host, dbname), pool_size=2, max_overflow=0,
+            pool_pre_ping=True)
         self.Base.metadata.bind = self.engine
         self.Base.metadata.create_all()
 
@@ -299,14 +315,14 @@ class AtlasDB(object):
         SQLAlchemy.orm.Session
             Session for interacting with DB
         """
-        Session = sessionmaker(bind=self.engine, autocommit=autocommit, autoflush=autoflush)
+        Session = sessionmaker(bind=self.engine, autocommit=autocommit,
+                               autoflush=autoflush)
         return Session()
 
     @staticmethod
     def getTableColumns(tablename):
         """Get a list of the columns for a given table
-.first():
-    print = self.ReferenceType(
+
         Parameters
         ----------
         tablename : AtlasDB.Table
@@ -364,7 +380,7 @@ class AtlasDB(object):
         if not genus:
             genus = self.Genus(
                     name=genus_name,
-                    origin_type_id=origin_type_id 
+                    origin_type_id=origin_type_id
                     )
             sess.add(genus)
             if not sess.autocommit:
