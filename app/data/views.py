@@ -24,6 +24,7 @@ def data_redirect():
     """
     return redirect(url_for('data.curator_dashboard', cur_id=current_user.id))
 
+
 @data.route('/data/curator<int:cur_id>')
 @login_required
 def curator_dashboard(cur_id):
