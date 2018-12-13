@@ -16,6 +16,14 @@ from ..utils.NoneDict import NoneDict
 #####################################################################
 ###                      SERVER VIEWS/METHODS                     ###
 #####################################################################
+@data.route("/data")
+@login_required
+def data_redirect():
+    """
+    Redirect user to dashboard
+    """
+    return redirect(url_for('data.curator_dashboard', cur_id=current_user.id))
+
 @data.route('/data/curator<int:cur_id>')
 @login_required
 def curator_dashboard(cur_id):
