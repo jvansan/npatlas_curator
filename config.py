@@ -30,6 +30,7 @@ class TestingConfig(Config):
     TESTING = True
 
 app_config = {
+    'default': DevelopmentConfig,
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig

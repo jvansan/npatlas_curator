@@ -1,0 +1,76 @@
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Data Dashboard{% endblock %}
+{% block body %}
+<div class="container">
+    {{ utils.flashed_messages() }}
+    <h1 style="text-align:center;">Datasets</h1>
+    {% if datasets %}
+    <hr class="intro-divider">
+    <div class="center">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th width="15%">See Dataset / Run Checker</th>
+                    <th width="20%" style="text-align: center">Number Articles</th>
+                    <th width="15%">List Articles</th>
+                    <th width="25%" style="text-align: center">Curator</th>
+                    <th width="25%" style="text-align: center">Completed</th>
+                    <th width="15%" style="text-align: center">Checked</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dataset in datasets.items %}
+                    <tr>
+                        {% if dataset.articles|length == 0 %}
+                            <td> <em>No Articles</em> </td>
+                        {% elif dataset.completed %}
+                            {% if dataset.training %}
+                                <td> <em><b>Dataset completed</b> <a href="#"> [SEE REPORT]</a> </em> </td>
+                            {% else %}
+                                <td> <em><b>Dataset completed</b></em> </td>
+                            {% endif %}
+                        {% elif dataset.last_article_id %}
+                            <td><a href="#">Resume Dataset</a></td>
+                        {% else %}
+                            <td><a href="#">Start Dataset</a></td>
+                        {% endif %}
+                        <td style="text-align: center"> {{ dataset.articles|length }} </td>
+                        <td> <a href="#">See all articles</a></td>
+                        <td style="text-align: center"> {{ dataset.curator.username }} </td>
+
+                        <td style="text-align: center"> {{ dataset.last_edit_date }} </td>
+                        <td style="text-align: center">
+                            {% if dataset.completed %}
+                                <i class="far fa-check-circle green"></i>
+                            {% else%}
+                                <i class="far fa-times-circle red"></i>
+                            {% endif%}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="text-align: center; padding-bottom: 5%">
+            {% if prev_url %}
+                <a href="{{ prev_url }}"><i class="fas fa-arrow-left fa-2x"></i></a>
+            {% endif %}
+            {% if next_url %}
+                <a href="{{ next_url }}"><i class="fas fa-arrow-right fa-2x"></i></a>
+            {% endif %}
+            <p>{{ datasets.page }}/{{ datasets.pages }}</p>
+        </div>
+    </div>
+    {% else %}
+    <hr class="intro-divider">
+        <div>
+            <h3 style="text-align:center;">
+                No datasets
+            </h3>
+        </div>
+    {% endif %}
+</div>
+<script>
+
+</script>
+{% endblock %}

@@ -118,6 +118,7 @@ $(document).ready(() => {
         // Hide all compound rows first then show target
         $(".compound-row").hide();
         $target.show();
+        chemViewers[rowNum].resetDisplay();
         // Scroll tab to center
         scrolltabDiv(rowNum)
         // Make tab appear active

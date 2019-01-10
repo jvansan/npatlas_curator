@@ -8,13 +8,13 @@ from app.models import Article, Compound, Curator, Dataset
 class TestBase(TestCase):
     """
     Base class for testing database
-    Requires "flask_test" database in MySQL server
+    Requires "flask_testing" database in MySQL server
     """
 
     def create_app(self):
         config_name = 'testing'
         app = create_app(config_name)
-        app.config.update(SQLALCHEMY_DATABASE_URI='mysql+pymysql://jvansan@localhost/flask_testing')
+        app.config.update(SQLALCHEMY_DATABASE_URI='mysql+pymysql://jvansan:jvansan@localhost/flask_testing')
         return app
 
     def setUp(self):

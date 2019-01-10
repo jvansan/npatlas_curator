@@ -257,6 +257,15 @@ div.scrollmenu button {
     color:#b91c1c
 }
 
+.info-box {
+    margin: 10px;
+    padding: 5px;
+    color: #808080;
+    border-style: solid;
+    border-color: #808080;
+    border-radius: 10px;
+}
+
 .bottom-pad {
     padding: 20px;
 }

@@ -5,11 +5,16 @@ from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from celery import Celery
 
 # local imports
 from config import app_config
+app_config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/0'
+app_config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/0'
 
 # initialze app variables
+bootstrap = Bootstrap()
+celery = Celery(__name__, broker=app_config['CELERY_BROKER_URL'], backend=app_config['CELERY_RESULT_BACKEND'])
 db = SQLAlchemy()
 login_manager = LoginManager()
 
@@ -19,13 +24,14 @@ def create_app(config_name):
     app.config.from_object(app_config[config_name])
     app.config.from_pyfile('config.py')
 
-    # initialze db, bootstrap, and login manager
-    Bootstrap(app)
+    # initialze db, bootstrap, celery and login manager
+    bootstrap.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_message = "You must login to access this page."
     login_manager.login_view = "auth.login"
     migrate = Migrate(app, db)
+    celery.conf.update(app.config)
 
     from app import models
 
@@ -37,6 +43,8 @@ def create_app(config_name):
     app.register_blueprint(home_blueprint)
     from .data import data as data_blueprint
     app.register_blueprint(data_blueprint, prefix='/data')
+    from .checker import checker as checker_blueprint
+    app.register_blueprint(checker_blueprint)
 
     @app.before_first_request
     def setup_logging():
