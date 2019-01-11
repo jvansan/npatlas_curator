@@ -11,9 +11,9 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th width="15%">See Dataset / Run Checker</th>
+                    <th width="15%">See Dataset</th>
                     <th width="20%" style="text-align: center">Number Articles</th>
-                    <th width="15%">List Articles</th>
+                    <th width="15%">Checker</th>
                     <th width="25%" style="text-align: center">Curator</th>
                     <th width="25%" style="text-align: center">Completed</th>
                     <th width="15%" style="text-align: center">Checked</th>
@@ -24,28 +24,50 @@
                     <tr>
                         {% if dataset.articles|length == 0 %}
                             <td> <em>No Articles</em> </td>
-                        {% elif dataset.completed %}
-                            {% if dataset.training %}
-                                <td> <em><b>Dataset completed</b> <a href="#"> [SEE REPORT]</a> </em> </td>
-                            {% else %}
-                                <td> <em><b>Dataset completed</b></em> </td>
+                        {% elif dataset.training %}
+                            {% if dataset.completed %}
+                                <td> 
+                                    <em><b>Training completed</b><br>
+                                        <a href="{{ url_for('data.trainingscore', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
+                                            [SEE REPORT]
+                                        </a> 
+                                    </em> 
+                                </td>
                             {% endif %}
-                        {% elif dataset.last_article_id %}
-                            <td><a href="#">Resume Dataset</a></td>
                         {% else %}
-                            <td><a href="#">Start Dataset</a></td>
+                            <td>
+                                <a href="{{ url_for('data.dataset', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
+                                    See Dataset
+                                </a>
+                            </td>
                         {% endif %}
                         <td style="text-align: center"> {{ dataset.articles|length }} </td>
-                        <td> <a href="#">See all articles</a></td>
+                        <td>
+                            <!-- Hidden input for keeping dataset id -->
+                            <input id="dataset-id" class="dataset-id" type="hidden" style="display: none" value="{{ dataset.id }}"> 
+                            <button type="button" class="btn btn-outline-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}">
+                                Run Checker
+                            </button>
+                        </td>
                         <td style="text-align: center"> {{ dataset.curator.username }} </td>
-
-                        <td style="text-align: center"> {{ dataset.last_edit_date }} </td>
                         <td style="text-align: center">
                             {% if dataset.completed %}
                                 <i class="far fa-check-circle green"></i>
-                            {% else%}
+                            {% else %}
                                 <i class="far fa-times-circle red"></i>
-                            {% endif%}
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            {% if dataset.checker_completed() %}
+                                <i class="far fa-check-circle green"></i>
+                            {% else %}
+                                <i class="far fa-times-circle red"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6">
+                            Instructions: <em> {{ dataset.instructions }} </em>
                         </td>
                     </tr>
                 {% endfor %}
@@ -70,7 +92,5 @@
         </div>
     {% endif %}
 </div>
-<script>
-
-</script>
+<script src="{{ url_for('static', filename='js/checker.js') }}"></script>
 {% endblock %}

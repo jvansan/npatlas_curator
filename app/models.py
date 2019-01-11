@@ -83,11 +83,32 @@ class Dataset(db.Model):
     articles = db.relationship('Article', secondary=dataset_article,
                                backref=db.backref('datasets', lazy=True))
     training = db.Column(db.Boolean, default=False)
+    checker_dataset = db.relationship('CheckerDataset', uselist=False,
+                                      backref='dataset')
 
     def get_articles(self):
         articles = Article.query.join(dataset_article)\
             .filter_by(dataset_id=self.id)
         return articles
+
+    def get_curator_id(self):
+        """
+        Get curator id if assigned dataset
+        Send a zero if not assigned - useful for admin access to data
+        """
+        return self.curator.id if self.curator else 0
+
+    def checker_running(self):
+        """
+        Boolean return if checker dataset exists and is running
+        """
+        return not self.checker_dataset.completed if self.checker_dataset else False
+
+    def checker_completed(self):
+        """
+        Boolean return if checker dataset exists and has completed checking
+        """
+        return self.checker_dataset.completed if self.checker_dataset else False
 
 
 class Article(db.Model):
@@ -127,3 +148,20 @@ class Compound(db.Model):
     smiles = db.Column(db.String(1000))
     source_organism = db.Column(db.String(255))
     npaid = db.Column(db.Integer)
+
+
+# ================================================================
+# =====                Checker Database Models               =====
+# ================================================================
+
+class CheckerDataset(db.Model):
+    """
+    Crete CheckerDataset table/model
+    """
+    __tablename__ = "dataset_checker"
+    id = db.Column(db.Integer, primary_key=True)
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    celery_task_id = db.Column(db.String(48), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    progress = db.Column(db.Float)
+    inserted = db.Column(db.Boolean, default=False)

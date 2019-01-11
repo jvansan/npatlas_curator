@@ -1,11 +1,12 @@
 import time
 
-from flask import jsonify, render_template, request, url_for
+from flask import jsonify, render_template, request, url_for, abort
 from flask_login import login_required
 
 from . import checker
 from .. import celery
 from ..admin.views import require_admin
+from ..models import Dataset
 
 
 @celery.task(bind=True)
@@ -61,3 +62,12 @@ def checkerstatus(task_id):
         }
 
     return jsonify(response)
+
+
+@checker.route('/checkerrunning', methods=['GET'])
+def checkerrunning():
+    ds_id = request.args.get('dsid')
+    if not ds_id:
+        abort(400)
+    dataset = Dataset.query.get_or_404(ds_id)
+    return jsonify({'running': dataset.checker_running()})
