@@ -7,73 +7,95 @@
     <h1 style="text-align:center;">Datasets</h1>
     {% if datasets %}
     <hr class="intro-divider">
-    <div class="center">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th width="15%">See Dataset</th>
-                    <th width="20%" style="text-align: center">Number Articles</th>
-                    <th width="15%">Checker</th>
-                    <th width="25%" style="text-align: center">Curator</th>
-                    <th width="25%" style="text-align: center">Completed</th>
-                    <th width="15%" style="text-align: center">Checked</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for dataset in datasets.items %}
-                    <tr>
-                        {% if dataset.articles|length == 0 %}
-                            <td> <em>No Articles</em> </td>
-                        {% elif dataset.training %}
-                            {% if dataset.completed %}
-                                <td> 
-                                    <em><b>Training completed</b><br>
-                                        <a href="{{ url_for('data.trainingscore', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
-                                            [SEE REPORT]
-                                        </a> 
-                                    </em> 
-                                </td>
-                            {% endif %}
-                        {% else %}
-                            <td>
-                                <a href="{{ url_for('data.dataset', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
-                                    See Dataset
-                                </a>
-                            </td>
+    <div class="dataset">
+        <div class="row">
+            <div class="col-lg-2">
+                See Dataset
+            </div>
+            <div class="col-lg-2">
+                Number of Articles
+            </div>
+            <div class="col-lg-2">
+                Checker
+            </div>
+            <div class="col-lg-2">
+                Curator
+            </div>
+            <div class="col-lg-2">
+                Completed
+            </div>
+            <div class="col-lg-2">
+                Checked
+            </div>
+        </div>
+        <hr>
+        {% for dataset in datasets.items %}
+            <div class="row" style="background-color: #dee2e6; padding: 10px 0px 10px 0px;">
+                <div class="col-lg-2">
+                    {% if dataset.articles|length == 0 %}
+                        <em>No Articles</em>
+                    {% elif dataset.training %}
+                        {% if dataset.completed %}
+                            <em><b>Training completed</b><br>
+                                <a href="{{ url_for('data.trainingscore', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
+                                    [SEE REPORT]
+                                </a> 
+                            </em> 
                         {% endif %}
-                        <td style="text-align: center"> {{ dataset.articles|length }} </td>
-                        <td>
-                            <!-- Hidden input for keeping dataset id -->
-                            <input id="dataset-id" class="dataset-id" type="hidden" style="display: none" value="{{ dataset.id }}"> 
-                            <button type="button" class="btn btn-outline-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}">
-                                Run Checker
-                            </button>
-                        </td>
-                        <td style="text-align: center"> {{ dataset.curator.username }} </td>
-                        <td style="text-align: center">
-                            {% if dataset.completed %}
-                                <i class="far fa-check-circle green"></i>
-                            {% else %}
-                                <i class="far fa-times-circle red"></i>
-                            {% endif %}
-                        </td>
-                        <td style="text-align: center">
-                            {% if dataset.checker_completed() %}
-                                <i class="far fa-check-circle green"></i>
-                            {% else %}
-                                <i class="far fa-times-circle red"></i>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="6">
-                            Instructions: <em> {{ dataset.instructions }} </em>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div style="text-align: center; padding-bottom: 5%">
+                    {% else %}
+                        <a href="{{ url_for('data.dataset', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
+                            See Dataset
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="col-lg-2">
+                    {{ dataset.articles|length }}
+                </div>
+                <div class="col-lg-2">
+                    <!-- Hidden input for keeping dataset id -->
+                    <input id="dataset-id-{{ dataset.id }}" class="dataset-id" type="hidden" style="display: none" value="{{ dataset.id }}">
+                    {% if dataset.completed and not dataset.training %}
+                    <button type="button" class="btn btn-outline-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}"
+                            onclick="startChecker({{dataset.id}})">
+                        Run Checker
+                    </button>
+                    {% else %}
+                        {% if dataset.training %}
+                            {% set tooltip = "Test dataset, cannot run checker." %}
+                        {% else %}
+                            {% set tooltip = "Dataset not yet completed." %}
+                        {% endif %}
+                    <button type="button" class="btn btn-outline-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}"
+                            data-toggle="tooltip" title="{{ tooltip }}" disabled="disabled">
+                        Run Checker
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="col-lg-2">
+                    {{ dataset.curator.username }}
+                </div>
+                <div class="col-lg-2" id="dataset-{{ dataset.id }}-completed">
+                    {% if dataset.completed %}
+                        <i class="far fa-check-circle green"></i>
+                    {% else %}
+                        <i class="far fa-times-circle red"></i>
+                    {% endif %}
+                </div>
+                <div class="col-lg-2">
+                    {% if dataset.checker_completed() %}
+                        <i class="far fa-check-circle green"></i>
+                    {% else %}
+                        <i class="far fa-times-circle red"></i>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row" id="dataset-{{ dataset.id }}-info-row">
+                <div class="col-lg-12" style="text-align: left">
+                    <p>Instructions: {{ dataset.instructions }}</p>
+                </div>
+            </div>
+        {% endfor %}
+        <div style="padding-bottom: 5%" class="col-lg-12">
             {% if prev_url %}
                 <a href="{{ prev_url }}"><i class="fas fa-arrow-left fa-2x"></i></a>
             {% endif %}
@@ -92,5 +114,6 @@
         </div>
     {% endif %}
 </div>
+<script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
 <script src="{{ url_for('static', filename='js/checker.js') }}"></script>
 {% endblock %}

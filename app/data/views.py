@@ -52,7 +52,9 @@ def curator_dashboard(cur_id):
             methods=['GET', 'POST'])
 @login_required
 def trainingscore(cur_id, ds_id):
-    """Score and render training set diffs at '/data/curator<int:id>/dataset<int:ds_id>/traningset'"""
+    """Score and render training set diffs at 
+       '/data/curator<int:id>/dataset<int:ds_id>/traningset'
+    """
     # Check that scoring scheme JSON exists
     # load it if it does
     # Throw 500 error if not
@@ -113,7 +115,7 @@ def trainingscore(cur_id, ds_id):
 
             # Check names match
             names = [x.name for x in art.compounds]
-            if Counter(names) != Counter(training_solution.get("names")):
+            if Counter(map(str.lower, names)) != Counter(map(str.lower, training_solution.get("names"))):
                 current_app.logger.debug("Incorrect Compound Name")
                 errors.append({
                     "artid": art.id,

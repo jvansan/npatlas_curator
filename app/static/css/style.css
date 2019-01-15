@@ -326,14 +326,30 @@ div.scrollmenu button {
     height: 120px;
     -webkit-animation: spin 2s linear infinite;
     animation: spin 2s linear infinite;
-  }
+}
 
-  @-webkit-keyframes spin {
+@-webkit-keyframes spin {
     0% { -webkit-transform: rotate(0deg); }
     100% { -webkit-transform: rotate(360deg); }
-  }
+}
 
-  @keyframes spin {
+@keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
+}
+
+.ui-widget-header {
+    background: #3498db;
+}
+.progress-bar {
+    /* background: #f3f3f3; */
+    border: 1px solid #3498db;
+    color: #3498db;
+    font-weight: bold;
+    text-align: center;
+    position: absolute;
+}
+
+.dataset {
+    text-align: center;
+}

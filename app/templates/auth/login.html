@@ -10,9 +10,9 @@
         <form method="POST" action="/login" class="form-signin">
             <h1>Please Login</h1>
             <label class="sr-only">{{ form.username.label }}:</label>
-            {{ form.username(class_="form-control", placeholder="Username", autofocus=true, required=true, type="username") }}
+            {{ form.username(class_="form-control", placeholder="Username", autofocus=true, required=true, type="username", autocomplete="username") }}
             <label class="sr-only">{{ form.password.label }}:</label>
-            {{ form.password(class_="form-control" ,placeholder="Password", required=true, type="password") }}
+            {{ form.password(class_="form-control" ,placeholder="Password", required=true, type="password", autocomplete="current-password") }}
             {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-primary btn-lg', type_='login') }}
         </form>
     </div>

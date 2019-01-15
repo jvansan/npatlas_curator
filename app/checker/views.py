@@ -1,4 +1,5 @@
 import time
+import random
 
 from flask import jsonify, render_template, request, url_for, abort
 from flask_login import login_required
@@ -12,8 +13,8 @@ from ..models import Dataset
 @celery.task(bind=True)
 def start_checker_task(dataset_id):
     time.sleep(5)
-    total = 100
-    for i in range(100):
+    total = random.randint(10,100)
+    for i in range(total):
         self.update_state(
             state='PROGRESS',
             meta={'current': i, 'total': total,
@@ -34,34 +35,50 @@ def startchecker(dataset_id):
                                                   task_id=checker_task.id)}
 
 
-@checker.route('/checkerstatus/<task_id>')
-def checkerstatus(task_id):
-    checker_task = start_checker_task.AsyncResult(task_id)
-    if checker_task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'current': 0,
-            'total': 1,
-            'status': 'Pending...'
-        }
-    elif checker_task.state != 'FAILURE':
-        response = {
-            'state': checker_task.state,
-            'current': checker_task.info.get('current', 0),
-            'total': checker_task.info.get('total', 1),
-            'status': checker_task.info.get('status', 'Failed...')
-        }
-        if 'result' in task.info:
-            response['result'] = task.info['result']
-    else:
-        response = {
-            'state': checker_task.state,
-            'current': 1,
-            'total': 1,
-            'status': str(task.info)
-        }
+@checker.route('/checkerstatus', methods=['GET'])
+def checkerstatus():
+    ds_id = request.args.get('dsid')
+    if not ds_id:
+        abort(400)
+    dataset = Dataset.query.get_or_404(ds_id)
+    checkerds = dataset.checker_dataset
 
+    response = {
+        'running': True,
+        'progress': checkerds.progress,
+        'status': 'Test status'
+    }
     return jsonify(response)
+
+
+# @checker.route('/checkerstatus/<task_id>')
+# def checkerstatus(task_id):
+#     checker_task = start_checker_task.AsyncResult(task_id)
+#     if checker_task.state == 'PENDING':
+#         response = {
+#             'state': checker_task.state,
+#             'current': 0,
+#             'total': 1,
+#             'status': 'Pending...'
+#         }
+#     elif checker_task.state != 'FAILURE':
+#         response = {
+#             'state': checker_task.state,
+#             'current': checker_task.info.get('current', 0),
+#             'total': checker_task.info.get('total', 1),
+#             'status': checker_task.info.get('status', 'Failed...')
+#         }
+#         if 'result' in checker_task.info:
+#             response['result'] = checker_task.info['result']
+#     else:
+#         response = {
+#             'state': checker_task.state,
+#             'current': 1,
+#             'total': 1,
+#             'status': str(checker_task.info)
+#         }
+
+#     return jsonify(response)
 
 
 @checker.route('/checkerrunning', methods=['GET'])
@@ -70,4 +87,8 @@ def checkerrunning():
     if not ds_id:
         abort(400)
     dataset = Dataset.query.get_or_404(ds_id)
-    return jsonify({'running': dataset.checker_running()})
+
+    response = {
+        'running': dataset.checker_running()
+    }
+    return jsonify(response)
