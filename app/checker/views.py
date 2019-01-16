@@ -1,19 +1,19 @@
 import time
 import random
 
-from flask import jsonify, render_template, request, url_for, abort
+from flask import jsonify, render_template, request, url_for, abort, flash
 from flask_login import login_required
 
 from . import checker
-from .. import celery
+from .. import celery, db
 from ..admin.views import require_admin
-from ..models import Dataset
+from ..models import Dataset, CheckerDataset
 
 
 @celery.task(bind=True)
-def start_checker_task(dataset_id):
+def start_checker_task(self, dataset_id):
     time.sleep(5)
-    total = random.randint(10,100)
+    total = random.randint(90,100)
     for i in range(total):
         self.update_state(
             state='PROGRESS',
@@ -30,8 +30,28 @@ def start_checker_task(dataset_id):
 @login_required
 @require_admin
 def startchecker(dataset_id):
-    checker_task = start_checker_task.delay(dataset_id)
-    return jsonify({}), 202, {'Location': url_for('checkerstatus',
+    checker_task = start_checker_task.delay(dataset_id=dataset_id)
+    flash(checker_task.id)
+    checker_dataset = CheckerDataset.query.filter_by(dataset_id=dataset_id).first()
+
+    if not checker_dataset:
+        checker_dataset = CheckerDataset(dataset_id=dataset_id, 
+                                        celery_task_id=checker_task.id,
+                                        progress=0)
+        db.session.add(checker_dataset)
+
+    else:
+        checker_dataset.celery_task_id=checker_task.id
+        checker_dataset.progress=0
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        flash('Error: database could not be reached')
+        abort(400)
+
+    return jsonify({}), 202, {'Location': url_for('checker.checkerstatus',
                                                   task_id=checker_task.id)}
 
 

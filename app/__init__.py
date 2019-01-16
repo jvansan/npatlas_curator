@@ -18,7 +18,7 @@ celery = Celery(__name__, broker=app_config['CELERY_BROKER_URL'], backend=app_co
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-def create_app(config_name):
+def create_app(config_name="default"):
     # Create app and set config
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])

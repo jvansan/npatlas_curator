@@ -66,7 +66,12 @@ async function launchMonitoring(datasetId) {
 }
 
 async function updateProgress(progress, statusUrl, datasetId) {
-    var result = await $.getJSON(statusUrl);
+    try {
+        var result = await $.getJSON(statusUrl);
+    } catch(err) {
+        // console.log(err);
+        throw "Error, could not get status for Dataset "+ datasetId;
+    }
     
     result.progress = progress;
     $(`#dataset-${datasetId}-progress-bar`).progressbar({"value": result.progress});
@@ -80,18 +85,21 @@ async function updateProgress(progress, statusUrl, datasetId) {
 }
 
 function startChecker(datasetId) {
+    const statusUrl = '/checkerstatus?dsid='+datasetId;
     // if dataset already running
     if ($(`#dataset-${datasetId}-completed`)[0].childNodes[1].classList[1] !== "fa-check-circle" ) {
         throw "Dataset hasn't been completed!";
     }
     console.log("Working!");
-    // $.post(`/checkerstart/dataset${datasetId}`, {})
-    //     .done( function(retJson) {
-
-    //     }).fail( () => {
-    //         alert('Failed to start checker for dataset '+datasetId);
-    //     });
-    initRunningProgress(datasetId);
+    $.post(`/checkerstart/dataset${datasetId}`, {})
+        .done( function(retJson) {
+            initRunningProgress(datasetId);
+            var progress = 10;
+            updateProgress(progress, statusUrl, datasetId);
+        }).fail( () => {
+            alert('Failed to start checker for dataset '+datasetId);
+        });
+   
 }
 
 async function main() {
@@ -100,12 +108,13 @@ async function main() {
         console.log('Datasets ids: [' + datasetIds.join(', ') + ']');
         var runningDatasets = await getRunningDatasets(datasetIds);
         console.log('Running Datasets: [' + runningDatasets.join(', ') + ']');
-        for (idx in runningDatasets) {
+
+        for (idx of runningDatasets) {
             console.log(idx);
             initRunningProgress(idx);
         }
         // Run monitoring of datasets
-        for (idy in runningDatasets) {
+        for (idy of runningDatasets) {
             console.log(idy);
             launchMonitoring(idy);
         }

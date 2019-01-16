@@ -156,7 +156,7 @@ class Compound(db.Model):
 
 class CheckerDataset(db.Model):
     """
-    Crete CheckerDataset table/model
+    Create CheckerDataset table/model
     """
     __tablename__ = "dataset_checker"
     id = db.Column(db.Integer, primary_key=True)
