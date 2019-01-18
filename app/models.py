@@ -110,6 +110,12 @@ class Dataset(db.Model):
         """
         return self.checker_dataset.completed if self.checker_dataset else False
 
+    def checker_task_id(self):
+        """
+        Return task id string if checker dataset exists, else None
+        """
+        return self.checker_dataset.celery_task_id if self.checker_dataset else None
+
 
 class Article(db.Model):
     """
@@ -163,5 +169,4 @@ class CheckerDataset(db.Model):
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
     celery_task_id = db.Column(db.String(48), nullable=False)
     completed = db.Column(db.Boolean, default=False)
-    progress = db.Column(db.Float)
     inserted = db.Column(db.Boolean, default=False)

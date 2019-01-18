@@ -55,7 +55,7 @@
                     <!-- Hidden input for keeping dataset id -->
                     <input id="dataset-id-{{ dataset.id }}" class="dataset-id" type="hidden" style="display: none" value="{{ dataset.id }}">
                     {% if dataset.completed and not dataset.training %}
-                    <button type="button" class="btn btn-outline-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}"
+                    <button type="button" class="btn btn-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}"
                             onclick="startChecker({{dataset.id}})">
                         Run Checker
                     </button>

@@ -1,10 +1,17 @@
-from flask import flash, redirect, render_template, url_for
+from flask import flash, redirect, render_template, url_for, request, abort
 from flask_login import login_required, login_user, logout_user
 
 from . import auth
 from .. import db
 from ..models import Curator
 from .forms import LoginForm
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
 
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -22,9 +29,9 @@ def login():
 
             # redirect to appropriate place
             if curator.is_admin:
-                return redirect(url_for('home.admin_dashboard'))
+                return form.redirect(url_for('home.admin_dashboard'), form=form)
             else:
-                return redirect(url_for('data.curator_dashboard', cur_id=curator.id))
+                return form.redirect(url_for('data.curator_dashboard', cur_id=curator.id))
         else:
             flash('Invalid username or password.')
 

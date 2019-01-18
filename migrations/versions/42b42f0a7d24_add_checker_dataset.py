@@ -1,8 +1,8 @@
 """add checker_dataset
 
-Revision ID: 4a55ad63dd08
+Revision ID: 42b42f0a7d24
 Revises: afed26c5c264
-Create Date: 2019-01-10 12:15:14.461891
+Create Date: 2019-01-17 11:45:25.369454
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '4a55ad63dd08'
+revision = '42b42f0a7d24'
 down_revision = 'afed26c5c264'
 branch_labels = None
 depends_on = None
@@ -23,7 +23,6 @@ def upgrade():
     sa.Column('dataset_id', sa.Integer(), nullable=True),
     sa.Column('celery_task_id', sa.String(length=48), nullable=False),
     sa.Column('completed', sa.Boolean(), nullable=True),
-    sa.Column('progress', sa.Float(), nullable=True),
     sa.Column('inserted', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['dataset_id'], ['dataset.id'], ),
     sa.PrimaryKeyConstraint('id')
