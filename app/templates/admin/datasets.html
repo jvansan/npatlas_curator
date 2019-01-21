@@ -81,7 +81,7 @@
                         <i class="far fa-times-circle red"></i>
                     {% endif %}
                 </div>
-                <div class="col-lg-2">
+                <div class="col-lg-2" id="dataset-{{ dataset.id }}-checked">
                     {% if dataset.checker_completed() %}
                         <i class="far fa-check-circle green"></i>
                     {% else %}

@@ -1,4 +1,3 @@
-import random
 import time
 
 from flask import (abort, current_app, flash, jsonify, render_template,
@@ -6,6 +5,7 @@ from flask import (abort, current_app, flash, jsonify, render_template,
 from flask_login import login_required
 
 from . import checker
+from .Checker import Checker
 from .. import celery, db
 from ..admin.views import require_admin
 from ..models import CheckerDataset, Dataset
@@ -13,22 +13,10 @@ from ..models import CheckerDataset, Dataset
 
 @celery.task(bind=True)
 def start_checker_task(self, dataset_id):
-    dataset = Dataset.query.get_or_404(dataset_id)
     time.sleep(5)
-    total = random.randint(90,100)
-    for i in range(total):
-        self.update_state(
-            state='PROGRESS',
-            meta={'current': i, 'total': total,
-                  'status': 'Working...'}
-        )
-        time.sleep(1)
 
-    dataset.checker_dataset.completed = True
-    try:
-        db.session.commit()
-    except:
-        db.session.rollback()
+    checker = Checker(dataset_id, celery_task=self)
+    checker.run()
 
     return {'current': 100, 'total': 100, 'status': 'Task completed!',
             'result': 42}
@@ -47,8 +35,8 @@ def startchecker(dataset_id):
         db.session.add(checker_dataset)
 
     else:
-        checker_dataset.celery_task_id=checker_task.id
-        checker_dataset.progress=0
+        checker_dataset.celery_task_id = checker_task.id
+        checker_dataset.completed = False
 
     try:
         db.session.commit()

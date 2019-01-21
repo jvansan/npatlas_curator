@@ -70,6 +70,7 @@ function completeDataset(datasetId) {
     newRow.insertAfter(infoRow);
     // Fix button
     $(`#dataset-checker-button-${datasetId}`).text("Run Checker").removeAttr("disabled");
+    markComplete(`#dataset-${datasetId}-checked`);
 }
 
 function failedDataset(datasetId) {
@@ -84,8 +85,6 @@ function failedDataset(datasetId) {
         </div>
     </div>`);
     newRow.insertAfter(infoRow);
-    
-
 }
  
 async function launchMonitoring(datasetId, taskId) {
@@ -129,6 +128,7 @@ function startChecker(datasetId) {
     }
     // Remove complete status if re-running
     $(`#dataset-${datasetId}-complete-status`).remove();
+    markIncomplete(`#dataset-${datasetId}-checked`);
 
     $.post(`/checkerstart/dataset${datasetId}`, {})
         .done( function(retJson) {
@@ -137,6 +137,18 @@ function startChecker(datasetId) {
         }).fail( () => {
             alert('Failed to start checker for dataset '+datasetId);
         });
+}
+
+function markComplete(idString) {
+    statusObject = $(idString).children("i");
+    statusObject.removeClass("fa-times-circle").removeClass("red");
+    statusObject.addClass("fa-check-circle").addClass("green");
+}
+
+function markIncomplete(idString) {
+    statusObject = $(idString).children("i");
+    statusObject.removeClass("fa-check-circle").removeClass("green");
+    statusObject.addClass("fa-times-circle").addClass("red");
 }
 
 // First get all the dataset IDs on the page
@@ -149,7 +161,7 @@ async function main() {
         console.log('Datasets ids: [' + datasetIds.join(', ') + ']');
         var [runningDatasets, completeDatasets] = await getRunningDatasets(datasetIds);
         console.log('Running Datasets: [' + Object.keys(runningDatasets).join(', ') + ']');
-        console.log('Complete Datasets: [' + Object.keys(completeDatasets).join(', ') + ']');
+        console.log('Complete Datasets: [' + completeDatasets.join(', ') + ']');
 
         for (var idw of completeDatasets) {
             completeDataset(idw);
