@@ -29,3 +29,4 @@ WTForms-SQLAlchemy==0.1
 requests
 celery
 redis
+pubchempy

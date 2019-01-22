@@ -142,6 +142,8 @@ class Article(db.Model):
     needs_work = db.Column(db.Boolean, default=False)
     is_nparticle = db.Column(db.Boolean, default=True)
     npa_artid = db.Column(db.Integer)
+    checker_article = db.relationship('CheckerArticle', uselist=False,
+                                      backref='article')
 
 
 class Compound(db.Model):
@@ -154,6 +156,8 @@ class Compound(db.Model):
     smiles = db.Column(db.String(1000))
     source_organism = db.Column(db.String(255))
     npaid = db.Column(db.Integer)
+    checker_compound = db.relationship('CheckerCompound', uselist=False,
+                                       backref='compound')
 
 
 # ================================================================
@@ -170,3 +174,42 @@ class CheckerDataset(db.Model):
     celery_task_id = db.Column(db.String(48), nullable=False)
     completed = db.Column(db.Boolean, default=False)
     inserted = db.Column(db.Boolean, default=False)
+
+
+class CheckerArticle(db.Model):
+    """
+    Create CheckerArticle table/model
+    """
+    __tablename__ = "checker_article"
+    id = db.Column(db.Integer, db.ForeignKey('article.id'), primary_key=True)
+    pmid = db.Column(db.Integer)
+    doi = db.Column(db.String(255))
+    npa_artid = db.Column(db.Integer)
+    journal = db.Column(db.String(255))
+    year = db.Column(db.Integer)
+    volume = db.Column(db.String(255))
+    issue = db.Column(db.String(255))
+    pages = db.Column(db.String(255))
+    authors = db.Column(db.Text)
+    title = db.Column(db.Text)
+    abstract = db.Column(db.Text)
+
+
+class CheckerCompound(db.Model):
+    """
+    Create CheckerCompound table.model
+    """
+    __tablename__ = "checker_compound"
+    id = db.Column(db.Integer, db.ForeignKey('compound.id'), primary_key=True)
+    name = db.Column(db.Text)
+    formula = db.Column(db.String(255))
+    smiles = db.Column(db.Text)
+    inchi = db.Column(db.Text)
+    inchikey = db.Column(db.String(40))
+    molblock = db.Column(db.Text)
+    source_genus = db.Column(db.String(255))
+    source_species = db.Column(db.String(255))
+    npaid = db.Column(db.Integer)
+    mibig_id = db.Column(db.Integer)
+    pubchem_id = db.Column(db.Integer)
+    berdy_id = db.Column(db.Integer)

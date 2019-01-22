@@ -2,7 +2,7 @@
 import sys
 sys.path.append("..")
 import unittest
-from app.checker.compound import Compound
+from app.checker.Compound import Compound
 
 class TestCompoundMethods(unittest.TestCase):
     """Tests for Compound"""

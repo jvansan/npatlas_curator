@@ -1,5 +1,4 @@
-import time
-
+from celery.utils.log import get_task_logger
 from flask import (abort, current_app, flash, jsonify, render_template,
                    request, url_for)
 from flask_login import login_required
@@ -10,12 +9,12 @@ from .. import celery, db
 from ..admin.views import require_admin
 from ..models import CheckerDataset, Dataset
 
+logger = get_task_logger(__name__)
 
 @celery.task(bind=True)
 def start_checker_task(self, dataset_id):
-    time.sleep(5)
 
-    checker = Checker(dataset_id, celery_task=self)
+    checker = Checker(dataset_id, celery_task=self, logger=logger)
     checker.run()
 
     return {'current': 100, 'total': 100, 'status': 'Task completed!',
