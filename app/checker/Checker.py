@@ -3,6 +3,7 @@ import logging
 import time
 
 from .Compound import Compound
+from .NameString import NameString
 from .. import db
 from ..models import CheckerArticle, CheckerCompound, CheckerDataset, Dataset
 from ..utils import atlasdb, pubchem_search
@@ -15,6 +16,8 @@ class Checker(object):
 
         self.task = kwargs.get("celery_task", None)
         self.logger = kwargs.get("logger") or self.default_logger()
+
+        self.review_list = []
 
     def update_status(self, current, total, status):
         if self.task:
@@ -58,18 +61,17 @@ class Checker(object):
 
 
     def check_article(self, checker_article):
-        pass
-        # self.check_doi(checker_article)
-        # self.check_pmid(checker_article)
-        # self.check_journal(checker_article)
-        # self.check_year(checker_article)
-        # self.check_volume(checker_article)
-        # self.check_issue(checker_article)
-        # self.check_pages(checker_article)
-        # self.check_authors(checker_article)
-        # self.check_title(checker_article)
-        # self.check_abstract(checker_article)
-        # commit()
+        self.check_doi(checker_article)
+        self.check_pmid(checker_article)
+        self.check_journal(checker_article)
+        self.check_year(checker_article)
+        self.check_volume(checker_article)
+        self.check_issue(checker_article)
+        self.check_pages(checker_article)
+        self.check_authors(checker_article)
+        self.check_title(checker_article)
+        self.check_abstract(checker_article)
+        commit()
 
 
     def check_compound(self, checker_compound):
@@ -108,16 +110,21 @@ class Checker(object):
             db.session.delete(db_compound.checker_compound)
             commit()
 
+        # Regularize the name
+        # Especially important for "not named" or similar
+        reg_name = NameString(db_compound.name)
+        reg_name.regularize_name()
+
         reg_compound = Compound(
             db_compound.smiles,
-            name=db_compound.name,
+            name=reg_name.get_name(),
             standardize=False
         )
         reg_compound.cleanStructure()
 
         check_compound = CheckerCompound(
             id=db_compound.id,
-            name=db_compound.name,
+            name=reg_name.get_name(),
             formula=reg_compound.formula,
             smiles=reg_compound.smiles,
             inchi=reg_compound.inchi,
@@ -148,7 +155,6 @@ class Checker(object):
         checker_compound.pubchem_id = find_pubchem_cid(note)
         checker_compound.berdy_id = find_berdy_id(note)
 
-
     def default_logger(self, *args, **kwargs):
         """Logging util function
 
@@ -160,14 +166,127 @@ class Checker(object):
             Default to INFO logging, set to log.DEBUG for development
         """
         level = kwargs.get("level", "INFO")
-        log.basicConfig(
+        logging.basicConfig(
             format='%(levelname)s: %(message)s',
             level=logging.getLevelName(level)
         )
 
-# ================================================================
-# =====                Helper functions                      =====
-# ================================================================
+    def add_problem(self, art_id, problem, value):
+        self.review_list.append(
+                Correction(art_id, problem, value)
+        )
+
+    ## Start Checker Rules
+    def check_doi(self, checker_article):
+        regexp = re.compile(r'^(10.\d{4,9})\/([-._;()/:+A-Za-z0-9]+)$')
+        if checker_article.doi:
+            if re.search(r'^(http|dx|doi)', checker_article.doi):
+                checker_article.doi = clean_doi(checker_article.doi)
+            match = regexp.match(checker_article.doi)
+            if not match:
+                self.add_problem(checker_article.id, "doi",
+                                 checker_article.doi)
+
+    def check_pmid(self, checker_article):
+        # Make sure integer
+        # This is enforced by datatype in DB
+        pass
+        
+    def check_journal(self, checker_article):
+        pass
+        
+    def check_year(self, checker_article):
+        # Make sure year string is valid
+        match = re.match('^[1-2][0-9]{3}$', str(checker_article.year))
+        if not match:
+            self.add_problem(checker_article.id, "year",
+                             checker_article.year)
+        
+    def check_volume(self, checker_article):
+        # > 6 characters or special characters FLAG
+        if checker_article.volume:
+            if len(checker_article.volume) > 6:
+                self.add_problem(checker_article.id, "volume",
+                                 checker_article.volume)
+        
+    def check_issue(self, checker_article):
+        # > 6 characters or special characters FLAG
+        if checker_article.issue:
+            if len(checker_article.issue) > 6:
+                self.add_problem(checker_article.id, "volume",
+                                 checker_article.issue)
+        
+    def check_pages(self, checker_article):
+    # only first pages #s INT < 100,000
+    # INT-INT
+    # or alphabetical characters
+        pages = checker_article.pages
+        if pages:
+            if re.match('^[0-9]',pages):
+                res = (x for x in pages.split('-') if x)
+                # Add problem if any string is greater than 6 characters
+                if [x for x in res if len(x) > 6]:
+                    self.add_problem(checker_article.id, "pages",
+                                     checker_article.pages)
+                else:
+                    checker_article.pages = '-'.join(res)
+            elif re.match('^[A-Za-z]', pages):
+                # Do nothing for now
+                pass
+            else:
+                # Check pages if they don't start with Alphanumeric char
+                self.add_problem(checker_article.id, "pages",
+                                 checker_article.pages)
+        
+    def check_authors(self, checker_article):
+        # at least 6 char, no numbers
+        if (len(checker_article.authors) < 6 or
+            has_numbers(checker_article.authors)):
+            self.add_problem(checker_article.id, "authors",
+                             checker_article.authors)
+
+    def check_title(self, checker_article):
+        # at least > 6 char
+        if (len(checker_article.title) < 6):
+            self.add_problem(checker_article.id, "title",
+                             checker_article.title)
+
+    def check_abstract(self, checker_article):
+        # If abstract, should be min 10 char 
+        # Probably should be more!
+        if checker_article.abstract:
+            if (len(checker_article.abstract) < 10):
+                self.add_problem(checker_article.id, "abstract",
+                                 checker_article.abstract)
+
+
+class Correction(object):
+    """
+    Object to store data which needs review
+    """
+
+    def __init__(self, art_id, problem, value):
+        self.verify_problem(problem)
+        self.art_id = art_id
+        self.problem = problem
+        self.value = value
+
+    def __repr__(self):
+        return "{} -> {}".format(self.art_id, self.problem)
+
+    @staticmethod
+    def verify_problem(problem):
+        assert (
+            problem == "doi" or problem == "pmid" or problem == "journal"
+            or problem == "year" or problem == "volume" or problem == "issue"
+            or problem == "authors" or problem == "title" or 
+            problem == "abstract"
+        )
+
+
+# =============================================================================
+# ==========                Helper functions                      =============
+# =============================================================================
 
 def db_add_commit(db_object):
     db.session.add(db_object)
@@ -186,7 +305,7 @@ def find_mibig_id(note):
     """
     Search note string for BGC string
     """
-    return find_id_string("BGC[0-9]{7}", note)
+    return find_id_string("BGC[0-9]+", note)
 
 
 def find_pubchem_cid(note):
@@ -215,6 +334,13 @@ def get_id_int(id_string):
     Take an ID string like BGC000001 and return integer value
     """
     try:
-        return int(re.search("[1-9]+", id_string).group())
+        return int(re.sub("[A-Za-z]+", "", id_string))
     except AttributeError:
         return None
+
+def clean_doi(doi):
+    regexp = re.compile("(https?://)(dx.)?doi.org/")
+    return regexp.sub("", doi)
+
+def has_numbers(input_string):
+    return any(char.isdigit() for char in input_string)

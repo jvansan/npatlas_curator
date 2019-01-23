@@ -16,9 +16,10 @@ def start_checker_task(self, dataset_id):
 
     checker = Checker(dataset_id, celery_task=self, logger=logger)
     checker.run()
+    result = checker.review_list
 
     return {'current': 100, 'total': 100, 'status': 'Task completed!',
-            'result': 42}
+            'result': str(result)}
 
 
 @checker.route('/checkerstart/dataset<int:dataset_id>', methods=['POST'])
