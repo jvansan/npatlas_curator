@@ -1,6 +1,7 @@
 from functools import wraps
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import (abort, flash, redirect, render_template, request, url_for,
+                   current_app)
 from flask_login import current_user, login_required
 
 from . import admin
@@ -14,11 +15,13 @@ from .forms import CuratorForm
 def require_admin(func):
     """
     Decorator to prevent non-admins from accessing the page
+    When in development environment this is ignored
     """
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_admin:
-            abort(403)
+        if not current_app.config.get("LOGIN_DISABLED", False):
+            if not current_user.is_admin:
+                abort(403)
         return func(*args, **kwargs)
 
     return decorated_function
