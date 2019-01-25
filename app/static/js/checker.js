@@ -47,8 +47,8 @@ function initRunningProgress(datasetId) {
                     <div class="row" style="border: none;">
                         <div class="col-lg-12 text-center" id="dataset-${datasetId}-status">
                             ...
-                        </div>
-                    </div><br>`);
+                        </div><br>
+                    </div>`);
     newRow.progressbar();
     newRow.insertAfter(infoRow);
 }
@@ -130,7 +130,7 @@ function startChecker(datasetId) {
     $(`#dataset-${datasetId}-complete-status`).remove();
     markIncomplete(`#dataset-${datasetId}-checked`);
 
-    $.post(`/checkerstart/dataset${datasetId}`, {})
+    $.post(`/checkerstart/dataset${datasetId}?standard=true`, {})
         .done( function(retJson) {
             initRunningProgress(datasetId);
             updateProgress(datasetId, retJson.task_id);

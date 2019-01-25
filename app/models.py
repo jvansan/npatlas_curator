@@ -48,7 +48,8 @@ def load_user(user_id):
     return Curator.query.get(int(user_id))
 
 
-# Define dataset_article and article_compound many-to-many relationships
+# Define dataset_article, article_compound, and dataset_problem 
+# many-to-many relationships
 dataset_article = db.Table(
     'dataset_article',
     db.Column('dataset_id', db.Integer, db.ForeignKey('dataset.id'),
@@ -85,6 +86,7 @@ class Dataset(db.Model):
     training = db.Column(db.Boolean, default=False)
     checker_dataset = db.relationship('CheckerDataset', uselist=False,
                                       backref='dataset')
+    problems = db.relationship('Problem', backref='dataset')
 
     def get_articles(self):
         articles = Article.query.join(dataset_article)\
@@ -185,7 +187,8 @@ class CheckerArticle(db.Model):
     pmid = db.Column(db.Integer)
     doi = db.Column(db.String(255))
     npa_artid = db.Column(db.Integer)
-    journal = db.Column(db.String(255))
+    journal = db.Column(db.String(1000))
+    journal_abbrev = db.Column(db.String(255))
     year = db.Column(db.Integer)
     volume = db.Column(db.String(255))
     issue = db.Column(db.String(255))
@@ -213,3 +216,131 @@ class CheckerCompound(db.Model):
     mibig_id = db.Column(db.Integer)
     pubchem_id = db.Column(db.Integer)
     berdy_id = db.Column(db.Integer)
+
+
+class Journal(db.Model):
+
+    """Table of accepted Journal Names
+
+    Attributes
+    ----------
+    altjournals : AltJournal
+        Relation to AltJournal table. Store all know typos
+        and deprecations of a given genus
+    journal : str
+        Name of journal
+    """
+
+    __tablename__ = "journal"
+    id = db.Column(db.Integer, primary_key=True)
+    journal = db.Column(db.Text, nullable=False)
+    abbrev = db.Column(db.String(255), nullable=False)
+    altjournals = db.relationship('AltJournal', backref='journal')
+
+    @staticmethod
+    def check_journal_match(journal_name):
+        journal_match = Journal.query.filter_by(journal=journal_name).first()
+        if not journal_match:
+            alt_query = journal_name.lower().replace('.', '')
+            alt = AltJournal.query.filter_by(altjournal=alt_query).first()
+            if alt:
+                journal_match = alt.journal
+
+        return journal_match
+
+
+class AltJournal(db.Model):
+    """Table of known altenatives to the given Journal names
+
+    Attributes
+    ----------
+    altjournal : str
+        Alternative name of journal
+    journal_id : int
+        Id of known journal
+    """
+
+    __tablename__ = "altjournal"
+    id = db.Column(db.Integer, primary_key=True)
+    journal_id = db.Column(db.Integer, db.ForeignKey('journal.id'))
+    altjournal = db.Column(db.Text)
+
+
+class Genus(db.Model):
+    """Table of accepted Genera
+
+    Attributes
+    ----------
+    altgenera : AltGenus
+        Relation to AltGenus table. Store all know typos
+        and deprecations of a given genus
+    genus : str
+        Name of genus
+    genustype : str
+        either Bacterium, Fungus, or Other
+    """
+    __tablename__ = "genus"
+    id = db.Column(db.Integer, primary_key=True)
+    genus = db.Column(db.String(255), nullable=False)
+    genustype = db.Column(db.String(55))
+    # One-to-many relationship with Alternative Genera
+    altgenera = db.relationship('AltGenus', backref='genus')
+    
+    @staticmethod
+    def check_genus_match(genus_name):
+        genus_match = Genus.query.filter_by(genus=genus_name).first()
+        if not genus_match:
+            alt_query = genus_name.lower()
+            alt = AltGenus.query.filter_by(altgenus=alt_query).first()
+            if alt:
+                genus_match = alt.genus
+
+        return genus_match
+
+
+class AltGenus(db.Model):
+    """Table of known altenatives to the given Genus names
+
+    Attributes
+    ----------
+    altgenus : str
+        Alternative name of genus
+    genus_id : int
+        Id of known genus
+    genustype : str
+        either Bacterium or Fungus
+    """
+
+    __tablename__ = "altgenus"
+    id = db.Column(db.Integer, primary_key=True)
+    genus_id = db.Column(db.Integer, db.ForeignKey('genus.id'))
+    altgenus = db.Column(db.String(255))
+    genustype = db.Column(db.String(55))
+
+
+# Tables for saving info to review
+class Problem(db.Model):
+    """
+    Problem table/model
+
+    Attributes
+    ----------
+    dataset_id : int
+        Dataset the problem belongs to
+    article_id : int
+        If problem with article -> save ID
+    compound_id : int
+        If problem with compound -> save ID
+    problem : str
+        One of the types of issues
+    resolved: bool
+        Has a problem been handled
+    """
+
+    __tablename__ = "problem"
+    id = db.Column(db.Integer, primary_key=True)
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'))
+    compound_id = db.Column(db.Integer, db.ForeignKey('compound.id'))
+    problem = db.Column(db.String(255), nullable=False)
+    resolved = db.Column(db.Boolean, default=False)

@@ -4,18 +4,18 @@ from flask import (abort, current_app, flash, jsonify, render_template,
 from flask_login import login_required
 
 from . import checker
-from .Checker import Checker
 from .. import celery, db
 from ..admin.views import require_admin
 from ..models import CheckerDataset, Dataset
+from .Checker import Checker
 
 logger = get_task_logger(__name__)
 
 @celery.task(bind=True)
-def start_checker_task(self, dataset_id):
+def start_checker_task(self, dataset_id, standardize_compounds=False):
 
     checker = Checker(dataset_id, celery_task=self, logger=logger)
-    checker.run()
+    checker.run(standardize_compounds=standardize_compounds)
     result = checker.review_list
 
     return {'current': 100, 'total': 100, 'status': 'Task completed!',
@@ -26,7 +26,11 @@ def start_checker_task(self, dataset_id):
 @login_required
 @require_admin
 def startchecker(dataset_id):
-    checker_task = start_checker_task.delay(dataset_id=dataset_id)
+    standard = bool(request.args.get("standard", False))
+    current_app.logger.info("Compound standardization is %s", 
+                            "ON" if standard else "OFF")
+    checker_task = start_checker_task.delay(dataset_id=dataset_id, 
+                                            standardize_compounds=standard)
     checker_dataset = CheckerDataset.query.filter_by(dataset_id=dataset_id).first()
 
     if not checker_dataset:

@@ -289,7 +289,7 @@ class AtlasDB(object):
     CompoundOrigin = CompoundOrigin
     CompoundSynthesis = CompoundSynthesis
 
-    def dbInit(self, dbtype, user, passwd, host, dbname):
+    def dbInit(self, conn_string):
         """Initialize DB to a given connection
 
         Parameters
@@ -301,8 +301,7 @@ class AtlasDB(object):
         #     dbtype, user, passwd, host))
         # engine.execute("CREATE DATABASE IF NOT EXISTS {0} CHARACTER SET utf8"
         #         .format(dbname))
-        self.engine = create_engine('{0}://{1}:{2}@{3}/{4}'.format(
-            dbtype, user, passwd, host, dbname), pool_size=2, max_overflow=0,
+        self.engine = create_engine(conn_string, pool_size=2, max_overflow=0,
             pool_pre_ping=True)
         self.Base.metadata.bind = self.engine
         self.Base.metadata.create_all()
@@ -399,6 +398,8 @@ class AtlasDB(object):
             if not sess.autocommit:
                 sess.commit()
         return journal
+
+    
 
 # Instance of Atlas DB to pass around
 atlasdb = AtlasDB()
