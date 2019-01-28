@@ -4,7 +4,7 @@ import time
 
 from .. import db
 from ..models import (CheckerArticle, CheckerCompound, CheckerDataset, Dataset,
-                      Journal, Genus, Problem)
+                      Genus, Journal, Problem)
 from ..utils import pubchem_search
 from ..utils.atlasdb import atlasdb
 from .Compound import Compound
@@ -84,15 +84,10 @@ class Checker(object):
             counter += 1
             prob = Problem(
                 dataset_id=self.dataset_id,
-                problem=corr.problem
+                problem=corr.problem,
+                article_id=corr.article_id,
+                compound_id=corr.compound_id
             )
-            if corr.obj_class == "article":
-                prob.article_id=corr.obj_id
-            elif corr.obj_class == "compound":
-                prob.compound_id=corr.obj_id
-            else:
-                raise TypeError("Object class does not match expect result",
-                                corr.obj_class)
 
             db_add_commit(prob)
 
@@ -126,12 +121,14 @@ class Checker(object):
             # First find connectivity matches
             if self.compound_flat_match(checker_compound):
                 if self.compound_full_match(checker_compound):
-                    self.add_problem("compound", checker_compound.id, "duplicate",
-                                     checker_compound.name)
+                    self.add_problem(checker_compound.get_article_id(), "duplicate",
+                                     comp_id=checker_compound.id)
             # Impose strict verification for flat matches
                 else:
-                    self.add_problem("compound", checker_compound.id, "flat_match",
-                                     checker_compound.name)
+                    self.add_problem(checker_compound.get_article_id(), "flat_match",
+                                     comp_id=checker_compound.id)
+            # Check for name match (ignores "Not named")
+            # if self.
         # Branch 1 - recurated compound
         else:
             pass
@@ -231,9 +228,9 @@ class Checker(object):
             level=logging.getLevelName(level)
         )
 
-    def add_problem(self, class_, obj_id, problem, value):
+    def add_problem(self, art_id, problem, comp_id=None):
         self.review_list.append(
-                Correction(class_, obj_id, problem, value)
+                Correction(art_id, problem, comp_id)
         )
 
     ## Start Checker Rules
@@ -244,8 +241,7 @@ class Checker(object):
             checker_article.doi = clean_doi(checker_article.doi)
             match = regexp.match(checker_article.doi)
             if not match:
-                self.add_problem("article", checker_article.id, "doi",
-                                 checker_article.doi)
+                self.add_problem(checker_article.id, "doi")
 
     def check_pmid(self, checker_article):
         # Make sure integer
@@ -258,29 +254,25 @@ class Checker(object):
             checker_article.journal = journal.journal
             checker_article.journal_abbrev = journal.abbrev
         else:
-            self.add_problem("article", checker_article.id, "journal",
-                             checker_article.journal)
+            self.add_problem(checker_article.id, "journal")
         
     def check_year(self, checker_article):
         # Make sure year string is valid
         match = re.match('^[1-2][0-9]{3}$', str(checker_article.year))
         if not match:
-            self.add_problem("article", checker_article.id, "year",
-                             checker_article.year)
+            self.add_problem(checker_article.id, "year")
         
     def check_volume(self, checker_article):
         # > 6 characters or special characters FLAG
         if checker_article.volume:
             if len(checker_article.volume) > 6:
-                self.add_problem("article", checker_article.id, "volume",
-                                 checker_article.volume)
+                self.add_problem(checker_article.id, "volume")
         
     def check_issue(self, checker_article):
         # > 6 characters or special characters FLAG
         if checker_article.issue:
             if len(checker_article.issue) > 6:
-                self.add_problem("article", checker_article.id, "issue",
-                                 checker_article.issue)
+                self.add_problem(checker_article.id, "issue")
         
     def check_pages(self, checker_article):
     # only first pages #s INT < 100,000
@@ -295,46 +287,44 @@ class Checker(object):
                 res = clean_num_pages(res)
                 # Add problem if any string is greater than 6 characters
                 if [x for x in res if len(x) > 6]:
-                    self.add_problem("article", checker_article.id, "pages",
-                                     checker_article.pages)
+                    self.add_problem(checker_article.id, "pages")
                 else:
                     checker_article.pages = '-'.join(res)
             elif re.search('^[A-Za-z]', pages):
                 # Do nothing for now
+                # max length = 10
                 pass
             else:
                 # Check pages if they don't start with Alphanumeric char
-                self.add_problem("article", checker_article.id, "pages",
-                                 checker_article.pages)
+                self.add_problem(checker_article.id, "pages")
         
     def check_authors(self, checker_article):
         # at least 6 char, no numbers
         if (len(checker_article.authors) < 6 or
             has_numbers(checker_article.authors)):
-            self.add_problem("article", checker_article.id, "authors",
-                             checker_article.authors)
+            self.add_problem(checker_article.id, "authors")
 
     def check_title(self, checker_article):
         # at least > 6 char
         if (len(checker_article.title) < 6):
-            self.add_problem("article", checker_article.id, "title",
-                             checker_article.title)
+            self.add_problem(checker_article.id, "title")
 
     def check_abstract(self, checker_article):
         # If abstract, should be min 10 char 
         # Probably should be more!
+        # "No abstract" is common
         if checker_article.abstract:
-            if (len(checker_article.abstract) < 10):
-                self.add_problem("article", checker_article.id, "abstract",
-                                 checker_article.abstract)
+            if (len(checker_article.abstract) < 20):
+                self.add_problem(checker_article.id, "abstract")
 
     def check_source_organism(self, checker_compound):
         genus = Genus.check_genus_match(checker_compound.source_genus)
         if genus:
             checker_compound.source_genus = genus.genus
         else:
-            self.add_problem("compound", checker_compound.id, "genus",
-                             checker_compound.source_genus)
+
+            self.add_problem(checker_compound.get_article_id(), "genus",
+                             comp_id=checker_compound.id)
 
     def compound_flat_match(self, compound):
         """
@@ -360,6 +350,14 @@ class Checker(object):
         sess.close()
         return bool(res)
 
+    ## TODO: COMPLETE THIS FUNCTION
+    def compound_name_match(self, compound):
+        if compound.name != "Not named":
+            sess = self.atlasdb.startSession()
+            res = sess.query(atlasdb.Name)\
+                    .filter(atlasdb.Name.name == compound.name)\
+                    .first()
+
 
 
 class Correction(object):
@@ -367,15 +365,14 @@ class Correction(object):
     Object to store data which needs review
     """
 
-    def __init__(self, class_, obj_id, problem, value):
+    def __init__(self, art_id, problem, comp_id=None):
         self.verify_problem(problem)
-        self.obj_class = class_
-        self.obj_id = obj_id
+        self.article_id = art_id
+        self.compound_id = comp_id
         self.problem = problem
-        self.value = value
 
     def __repr__(self):
-        return "{} -> {}".format(self.obj_id, self.problem)
+        return "{} -> {}".format(self.art_id + self.comp_id, self.problem)
 
     @staticmethod
     def verify_problem(problem):
@@ -477,4 +474,5 @@ def split_source_organism(org_string):
 
 def clean_species(species_string):
     species_string = decapitalize_first(species_string)
-    return re.sub('\b(sp|sp.|sps|sps.|spp|spp.)\b', "sp.", species_string, re.IGNORECASE)
+    # species_string = re.sub("^(?!sp.)sp$", "sp.", species_string)
+    return re.sub(r'\b(sp|sps|sps\.|spp\.|spp)(?!\S)', "sp.", species_string, re.IGNORECASE)

@@ -1,0 +1,100 @@
+{% import "bootstrap/utils.html" as utils %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% extends "base.html" %}
+{% block title %}Resolve Issue{% endblock %}
+{% block body%}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible" role="alert" style="display:none">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <!-- <strong>Title</strong> --> {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+<section class="container">
+    <div class="text-center">
+        <h1>Resolve Issue</h1>
+        <h2>
+            Problem: {{ problem.problem }}
+        </h2>
+        <!-- <hr class="intro-divider"> -->
+    </div>
+    <div>
+        <a href=" {{ url_for('checker.problem_list', ds_id=ds_id) }}">
+            Return to List
+        </a>
+        <hr class="full-divider">
+    </div>
+    <div class="container" class="info-section">
+        <div class="row">
+            <div class="col-lg-6">
+                {% if article.doi %}
+                    {% set dlink = "http://doi.org/"+article.doi %}
+                {% else %}
+                    {% set dlink = "#" %}
+                {% endif %}
+                <b>DOI:</b>  <a href="{{ dlink }}" target="_blank"> {{ article.doi or '-' }} </a>
+            </div>
+            <div class="col-lg-6">
+                {% if article.pmid %}
+                    {% set plink = "https://www.ncbi.nlm.nih.gov/pubmed/"+article.pmid %}
+                {% else %}
+                    {% set plink = "#" %}
+                {% endif %}
+                <b>PMID:</b>  <a href="{{ plink }}" target="_blank">{{ article.pmid or '-' }}</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Title:</b>  {{ article.title or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Authors:</b>  {{ article.authors or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Abstract:</b>  {{ article.abstract or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <b>Year:</b>  {{ article.year or '-' }}
+            </div>
+            <div class="col-lg-6">
+                <b>Pages:</b>  {{ article.pages or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <b>Volume:</b>  {{ article.volume or '-' }}
+            </div>
+            <div class="col-lg-6">
+                <b>Issue:</b>  {{ article.issue or '-' }}
+            </div>
+        </div>
+    </div>
+    <hr class="full-divider">
+    <div class="container">
+        <div>
+            <h3>
+                Problem: {{ problem.problem }}
+            </h3>
+        </div>
+        {% if problem.problem == "journal" %}
+            journal
+        {% elif problem.problem == "genus" %}
+            genus
+        {% elif problem.problem == "flat_match" or problem.problem == "duplicate" %}
+            structure
+        {% else %}
+            {{ wtf.quick_form(form, button_map={'submit':'success'}) }}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

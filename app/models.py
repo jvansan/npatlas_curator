@@ -217,6 +217,10 @@ class CheckerCompound(db.Model):
     pubchem_id = db.Column(db.Integer)
     berdy_id = db.Column(db.Integer)
 
+    def get_article_id(self):
+        article = self.compound.article[0]
+        return article.id
+
 
 class Journal(db.Model):
 
@@ -239,7 +243,12 @@ class Journal(db.Model):
 
     @staticmethod
     def check_journal_match(journal_name):
+        # Full name query first
         journal_match = Journal.query.filter_by(journal=journal_name).first()
+        # Abbreviation query second
+        if not journal_match:
+            journal_match = Journal.query.filter_by(abbrev=journal_name).first()
+        # Last check the list of known alternatives
         if not journal_match:
             alt_query = journal_name.lower().replace('.', '')
             alt = AltJournal.query.filter_by(altjournal=alt_query).first()

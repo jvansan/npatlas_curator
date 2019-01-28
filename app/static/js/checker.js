@@ -53,7 +53,7 @@ function initRunningProgress(datasetId) {
     newRow.insertAfter(infoRow);
 }
 
-function completeDataset(datasetId) {
+function completeDataset(datasetId, resolveUrl) {
     // Remove status data
     let infoRow = $(`#dataset-${datasetId}-info-row`);
     let statusRow = $(`#dataset-${datasetId}-status-row`);
@@ -63,7 +63,11 @@ function completeDataset(datasetId) {
     let newRow = $(`
     <div class="row" id=dataset-${datasetId}-complete-status>
         <div class="col-lg-12 text-center">
-            Dataset complete running!
+            Checker complete running for dataset!
+            <br>
+            <a class="btn btn-success" href="${resolveUrl}" style="display:inline-block;padding-button:12px">
+                Resolve Problems and Insert Data
+            </a>
         </div>
     </div>
     `);
@@ -102,7 +106,8 @@ async function updateProgress(datasetId, taskId) {
     }
 
     if (result.state == 'SUCCESS') {
-        completeDataset(datasetId);
+        resolveUrl = result.result;
+        completeDataset(datasetId, resolveUrl);
     } else if (result.state == 'FAILURE') {
         failedDataset(datasetId);
     } else {
@@ -130,7 +135,9 @@ function startChecker(datasetId) {
     $(`#dataset-${datasetId}-complete-status`).remove();
     markIncomplete(`#dataset-${datasetId}-checked`);
 
-    $.post(`/checkerstart/dataset${datasetId}?standard=true`, {})
+    // This top version will run standardization on all compounds
+    // $.post(`/checkerstart/dataset${datasetId}?standard=true`, {})
+    $.post(`/checkerstart/dataset${datasetId}`, {})
         .done( function(retJson) {
             initRunningProgress(datasetId);
             updateProgress(datasetId, retJson.task_id);
@@ -164,7 +171,8 @@ async function main() {
         console.log('Complete Datasets: [' + completeDatasets.join(', ') + ']');
 
         for (var idw of completeDatasets) {
-            completeDataset(idw);
+            resolveUrl = `/admin/resolve/dataset${idw}`;
+            completeDataset(idw, resolveUrl);
         }
 
         for (var idx of Object.keys(runningDatasets)) {

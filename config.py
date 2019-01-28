@@ -13,7 +13,7 @@ class DevelopmentConfig(Config):
     """
 
     SQLALCHEMY_ECHO = True
-    LOGIN_DISABLED=True
+    # LOGIN_DISABLED=True
 
 
 class ProductionConfig(Config):
