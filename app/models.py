@@ -81,6 +81,7 @@ class Dataset(db.Model):
     last_article_id = db.Column(db.Integer, db.ForeignKey('article.id'))
     instructions = db.Column(db.String(1000))
     completed = db.Column(db.Boolean, default=False)
+    standardized = db.Column(db.Boolean, default=False)
     articles = db.relationship('Article', secondary=dataset_article,
                                backref=db.backref('datasets', lazy=True))
     training = db.Column(db.Boolean, default=False)
@@ -92,6 +93,12 @@ class Dataset(db.Model):
         articles = Article.query.join(dataset_article)\
             .filter_by(dataset_id=self.id)
         return articles
+
+    def get_compounds(self):
+        compounds = []
+        for art in self.articles:
+            compounds.extend(art.compounds)
+        return compounds
 
     def get_curator_id(self):
         """

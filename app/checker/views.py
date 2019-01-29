@@ -3,12 +3,12 @@ from flask import (abort, current_app, flash, jsonify, render_template,
                    request, url_for, redirect)
 from flask_login import login_required
 
-from .forms import SimpleIntForm, SimpleStringForm
+from .forms import SimpleIntForm, SimpleStringForm, JournalForm, GenusForm
 from . import checker
 from .. import celery, db
 from ..admin.views import require_admin
 from ..models import (CheckerDataset, Dataset, Problem, CheckerArticle,
-                      CheckerCompound)
+                      CheckerCompound, Journal, AltJournal, Genus, AltGenus)
 from .Checker import Checker
 
 logger = get_task_logger(__name__)
@@ -130,6 +130,32 @@ def problem_list(ds_id):
         problems=problems)
 
 
+@checker.route('/_search_journal')
+def journal_autocomplete():
+    search = request.args.get('search')
+    current_app.logger.debug("Search = %s", search)
+    journals = Journal.query\
+                .filter(db.or_(Journal.journal.like(search+"%"), 
+                               Journal.abbrev.like(search+"%")))\
+                .all()
+    current_app.logger.debug(journals)
+   
+    return jsonify(results=[x.journal for x in journals])
+
+
+@checker.route('/_search_genus')
+def genus_autocomplete():
+    search = request.args.get('search')
+    type_ = request.args.get('type')
+    current_app.logger.debug('Search = %s', search)
+    genera = Genus.query\
+                .filter(Genus.genustype == type_)\
+                .filter(Genus.genus.like(search+"%"))\
+                .all()
+    current_app.logger.debug(genera)
+    return jsonify(results=[x.genus for x in genera])
+
+
 @checker.route('/admin/resolve/dataset<int:ds_id>/problem<int:prob_id>',
                methods=['GET', 'POST'])
 @login_required
@@ -148,24 +174,29 @@ def resolve_problem(ds_id, prob_id):
         abort(404)
     form = None
     if problem.problem == "journal":
-        pass
+        form = journal_form_factory(article)
     elif problem.problem == "genus":
-        pass
-    elif problem.problem == "flat_match" or problem.problem == "duplicate":
+        form = genus_form_factory(compound)
+    elif (problem.problem == "flat_match" or problem.problem == "duplicate"
+          or problem.problem == "name_match"):
         pass
     else:
         form = simple_problem_form_factory(problem, article)
 
     
     if (form.validate_on_submit() or form.force.data):
-        flash("Form submitted!")
+        save_resolve_data(form, article, compound)
+        problem.resolved = True
+        db.session.commit()
+
         return redirect(url_for('checker.problem_list', ds_id=ds_id))
     
     else:
         flash_errors(form)
 
     return render_template('checker/resolve.html', ds_id=ds_id,
-                           problem=problem, article=article, form=form)
+                           problem=problem, article=article, form=form,
+                           compound=compound)
 
 
 def simple_problem_form_factory(problem, article):
@@ -189,8 +220,101 @@ def simple_problem_form_factory(problem, article):
         form = create_string_form(article.abstract, problem.problem)
     return form
 
+
 def create_numeric_form(value, type_):
     return SimpleIntForm(value=value, type_=type_)
 
+
 def create_string_form(value, type_):
     return SimpleStringForm(value=value, type_=type_)
+
+
+def journal_form_factory(article):
+    return JournalForm(value=article.journal, 
+                       new_journal_full=article.journal,
+                       alt_journal=article.journal)
+
+
+def genus_form_factory(compound):
+    return GenusForm(value=compound.source_genus,
+                     new_genus_name=compound.source_genus,
+                     alt_genus_name=compound.source_genus)
+
+
+def save_resolve_data(form, article, compound):
+    # Check form in simple classes 
+    # These changes are all article data
+    if form.__class__.__name__ in ["SimpleIntForm", "SimpleStringForm"]:
+        attribute = form.type_.data
+        value = form.value.data or None
+        setattr(article, attribute, value)
+
+    # Check if journal class
+    elif form.__class__.__name__ == "JournalForm":
+        save_journal(form, article)
+
+    # Check if genus class
+    elif form.__class__.__name__ == "GenusForm":
+        save_genus(form, compound)
+
+
+def save_journal(form, article):
+    option = form.select.data
+    if option == "alt":
+        article.journal = form.alt_journal.data
+        journal = Journal.query.filter_by(journal=article.journal).first()
+        if not journal:
+            abort(500)
+        alt = AltJournal(altjournal=form.value.data.lower().replace(".",""),
+                         journal=journal)
+        db_add_commit(alt)
+
+    elif option == "new":
+        article.journal = form.new_journal_full.data
+        new = Journal(journal=form.new_journal_full.data,
+                      abbrev=form.new_journal_abbrev.data)
+        db_add_commit(new)
+
+    else:
+        abort(500)
+
+
+def save_genus(form, compound):
+    option = form.select.data
+    type_ = form.genus_type.data
+    original = form.value.data
+
+    if option == "alt":
+        genus_string = form.alt_genus_name.data
+        compound.source_genus = genus_string
+        genus = Genus.query\
+            .filter_by(genus=genus_string,
+                       genustype=type_)\
+            .first()
+        if not genus:
+            abort(400)
+        alt = AltGenus(altgenus=original.lower(),
+                       genustype=type_,genus=genus)
+        db_add_commit(alt)
+
+    elif option == "new":
+        genus_string = form.new_genus_name.data
+        compounds.source_genus = genus_string
+        new = Genus(genus=genus_string, genustype=type_)
+        db_add_commit(new)
+
+    else:
+        abort(500)
+
+
+def db_add_commit(db_object):
+    db.session.add(db_object)
+    commit()
+
+
+def commit():
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        raise e

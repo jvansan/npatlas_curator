@@ -40,7 +40,7 @@
             </div>
             <div class="col-lg-6">
                 {% if article.pmid %}
-                    {% set plink = "https://www.ncbi.nlm.nih.gov/pubmed/"+article.pmid %}
+                    {% set plink = "https://www.ncbi.nlm.nih.gov/pubmed/"+article.pmid|string %}
                 {% else %}
                     {% set plink = "#" %}
                 {% endif %}
@@ -55,6 +55,11 @@
         <div class="row">
             <div class="col-lg-12">
                 <b>Authors:</b>  {{ article.authors or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Journal:</b>  {{ article.journal or '-' }}
             </div>
         </div>
         <div class="row">
@@ -87,9 +92,58 @@
             </h3>
         </div>
         {% if problem.problem == "journal" %}
-            journal
+            <h4>
+                Value: {{ article.journal }}
+            </h4>
+            <form method="POST" class="form-horizontal">
+                {{ form.value() }}
+                <div class="row form-group">
+                    {{ form.select.label(class_="control-label col-lg-2") }}
+                    {{ form.select(class="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.alt_journal.label(class_="control-label altJournal") }}
+                    {{ form.alt_journal(class_="altJournal form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.new_journal_full.label(class_="control-label newJournal") }}
+                    {{ form.new_journal_full(class_="newJournal form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.new_journal_abbrev.label(class_="control-label newJournal") }}
+                    {{ form.new_journal_abbrev(class_="newJournal form-control") }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-success', type='submit') }}
+                </div>
+            </form>
+
         {% elif problem.problem == "genus" %}
-            genus
+            <h4>
+                Value: {{ compound.genus }}
+            </h4>
+            <form method="POST" class="form-horizontal">
+                {{ form.value() }}
+                <div class="row form-group">
+                    {{ form.select.label(class_="control-label col-lg-2") }}
+                    {{ form.select(class="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.genus_type.label(class_="control-label") }}
+                    {{ form.genus_type(class_="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.new_genus_name.label(class_="control-label newGenus") }}
+                    {{ form.new_genus_name(class_="newGenus form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.alt_genus_name.label(class_="control-label altGenus") }}
+                    {{ form.alt_genus_name(class_="altGenus form-control") }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-success', type='submit') }}
+                </div>
+            </form>
         {% elif problem.problem == "flat_match" or problem.problem == "duplicate" %}
             structure
         {% else %}
@@ -97,4 +151,5 @@
         {% endif %}
     </div>
 </section>
+<script src="{{ url_for('static', filename='js/resolve.js') }}"></script>
 {% endblock %}

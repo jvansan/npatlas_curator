@@ -96,6 +96,7 @@ class Checker(object):
 
 
     def check_article(self, checker_article):
+        self.check_article_duplicate(checker_article)
         self.check_doi(checker_article)
         self.check_pmid(checker_article)
         self.check_journal(checker_article)
@@ -128,7 +129,9 @@ class Checker(object):
                     self.add_problem(checker_compound.get_article_id(), "flat_match",
                                      comp_id=checker_compound.id)
             # Check for name match (ignores "Not named")
-            # if self.
+            if self.compound_name_match(checker_compound):
+                self.add_problem(checker_compound.get_article_id(), "name_match",
+                                 comp_id=checker_compound.id)
         # Branch 1 - recurated compound
         else:
             pass
@@ -326,6 +329,21 @@ class Checker(object):
             self.add_problem(checker_compound.get_article_id(), "genus",
                              comp_id=checker_compound.id)
 
+    def check_article_duplicate(self, check_article):
+        if not check_article.npa_artid:
+            npart_id = None
+
+            if check_article.doi:
+                npart_id = self.npa_artid_from_article_doi(check_article)
+                if npart_id:
+                    check_article.npa_artid = npart_id
+                    commit()
+            if not npart_id:
+                npart_id = self.npa_artid_from_article_title(check_article)
+                if npart_id:
+                    check_article.npa_artid = npart_id
+                    commit()
+
     def compound_flat_match(self, compound):
         """
         Query NP Atlas DB to see if there is a flat match
@@ -350,14 +368,45 @@ class Checker(object):
         sess.close()
         return bool(res)
 
-    ## TODO: COMPLETE THIS FUNCTION
     def compound_name_match(self, compound):
+        """
+        Query NP Atlas DB to see if there is a name match
+        Return boolean match 
+        """
+        res = None
         if compound.name != "Not named":
             sess = self.atlasdb.startSession()
             res = sess.query(atlasdb.Name)\
                     .filter(atlasdb.Name.name == compound.name)\
                     .first()
+            sess.close()
+        return bool(res)
 
+    def npa_artid_from_article_doi(self, article):
+        """
+        Query NP Atlas DB and see if an article already exists
+        without the article having and npartid
+        Return npa_artid value or None
+        """
+        sess = self.atlasdb.startSession()
+        res = sess.query(atlasdb.Reference)\
+                .filter(atlasdb.Reference.doi == article.doi)\
+                .first()
+        sess.close()
+        return res.id if res else None
+
+    def npa_artid_from_article_title(self, article):
+        """
+        Query NP Atlas DB and see if an article already exists
+        without the article having and npartid
+        Return npa_artid value or None
+        """
+        sess = self.atlasdb.startSession()
+        res = sess.query(atlasdb.Reference)\
+                .filter(atlasdb.Reference.title == article.title)\
+                .first()
+        sess.close()
+        return res.id if res else None
 
 
 class Correction(object):
@@ -382,6 +431,7 @@ class Correction(object):
             or problem == "authors" or problem == "title" or problem == "pages"
             or problem == "abstract" or problem == "duplicate" 
             or problem == "flat_match" or problem == "genus"
+            or problem == "name_match"
         )
 
 
