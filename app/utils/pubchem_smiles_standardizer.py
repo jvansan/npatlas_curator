@@ -1,7 +1,6 @@
 import re
 import time
 import requests
-import logging
 from rdkit import Chem
 
 """
@@ -33,9 +32,8 @@ ConnectionError - If requests library is unable to reach PubChem
 (Note the last two can be considered as redundant)
 """
 
-
 def get_standardized_smiles(in_smiles, max_retry=3):
-    logging.debug("Input SMILES:\t%s", in_smiles)
+    print("Input SMILES:\t%s" % in_smiles)
     # Check that smiles is smile string like
     if not is_smiles(in_smiles):
         raise TypeError
@@ -49,14 +47,14 @@ def get_standardized_smiles(in_smiles, max_retry=3):
             request2 = poll_PCT(reqid)
             # Check connection was made
             if request2.status_code != requests.codes.ok:
+                print("There was a failure contacting PUG gateway.")
                 break
-                logging.error("There was a failure contacting PUG gateway.")
 
             # Check status code
             # This will be "success" if queued or done otherwise break
             if not check_PCT_status(request2.text):
+                print("PUG was unable to standardize the given structure")
                 break
-                logging.error("PUG was unable to standardize the given structure")
 
             # Try and get smiles string from request
             # smiles will either be retrieved or set to None, continuing loop
@@ -65,10 +63,12 @@ def get_standardized_smiles(in_smiles, max_retry=3):
             # Sleep for a second if didn't get smiles
             time.sleep(1)
             counter += 1
-        logging.debug("Output SMILES:\t%s", smiles)
+        if not smiles:
+          smiles = in_smiles
+        print("Output SMILES:\t%s" % smiles)
         return smiles
     else:
-        logging.error("There was a failure contacting PUG gateway.")
+        print("There was a failure contacting PUG gateway.")
         raise ValueError
 
  # DO NOT TOUCH BELOW THIIS

@@ -17,18 +17,48 @@ async function checkDatasetRunning(datasetId) {
 }
 
 async function getRunningDatasets(datasetIds) {
+    var standardDatasets = {};
     var runningDatasets = {};
     var completeDatasets = [];
     for (var idx of datasetIds) {
         const result = await checkDatasetRunning(idx);
-        if (result.running === true) {
+        if (result.standard === true) {
+            standardDatasets[idx] = result.task_id;
+        } else if (result.running === true) {
             runningDatasets[idx] = result.task_id;
         } else if (result.complete === true) {
             completeDatasets.push(idx);
         }
     }
-    return [runningDatasets, completeDatasets];
+    return [standardDatasets, runningDatasets, completeDatasets];
 }
+
+
+async function monitorStandardization(datasetId, taskId) {
+    const statusUrl = `/standardstatus?taskid=${taskId}`;
+    $(`#dataset-checker-button-${datasetId}`).attr("disabled", "disabled").html("Standardization Running");
+    try {
+        result = await $.getJSON(statusUrl);
+    } catch(err) {
+        // console.log(err);
+        throw "Error, could not get standardization status for Dataset "+ datasetId;
+    }
+
+    if (result.state === "SUCCESS") {
+        $(`#dataset-checker-button-${datasetId}`).removeAttr("disabled").html("Run Checker")
+            .attr("onclick", `startChecker(${datasetId})`);
+
+        markComplete(`#dataset-${datasetId}-completed`);
+    } else if (result.state === "FAILURE") {
+        alert("Failed to standardize dataset!");
+        $(`#dataset-checker-button-${datasetId}`).removeAttr("disabled").html("Run Standardization");
+    } else {
+        await timeout(3000);
+        monitorStandardization(datasetId, taskId);
+    }
+
+}
+
 
 function initRunningProgress(datasetId) {
     // Disable button
@@ -91,24 +121,21 @@ function failedDataset(datasetId) {
     newRow.insertAfter(infoRow);
 }
  
-async function launchMonitoring(datasetId, taskId) {
-    // Monitor status
-    updateProgress(datasetId, taskId);
-}
 
-async function updateProgress(datasetId, taskId) {
+async function monitorChecker(datasetId, taskId) {
     const statusUrl = '/checkerstatus?taskid='+taskId;    
     try {
         result = await $.getJSON(statusUrl);
     } catch(err) {
         // console.log(err);
-        throw "Error, could not get status for Dataset "+ datasetId;
+        throw "Error, could not get Checker status for Dataset "+ datasetId;
     }
 
     if (result.state == 'SUCCESS') {
         resolveUrl = result.result;
         completeDataset(datasetId, resolveUrl);
     } else if (result.state == 'FAILURE') {
+        $(`#dataset-checker-button-${datasetId}`).removeAttr("disabled");
         failedDataset(datasetId);
     } else {
         progress = parseInt(result.current * 100 / result.total);
@@ -118,11 +145,9 @@ async function updateProgress(datasetId, taskId) {
         
         if (progress < 100) {
             await timeout(2000);
-            updateProgress(datasetId, taskId);
+            monitorChecker(datasetId, taskId);
         }
     }
-    
-
 }
 
 function startChecker(datasetId) {
@@ -132,23 +157,38 @@ function startChecker(datasetId) {
         throw "Dataset hasn't been completed!";
     }
     // Remove complete status if re-running
+    startUrl = `/checkerstart/dataset${datasetId}`;
+    if ($(`#dataset-${datasetId}-checked`).children('i').attr('class').split(/\s+/).includes("fa-check-circle")) {
+        if (confirm('Restart checker?')) {
+            startUrl = `/checkerstart/dataset${datasetId}?restart=true`;
+        }
+    }
     $(`#dataset-${datasetId}-complete-status`).remove();
     markIncomplete(`#dataset-${datasetId}-checked`);
 
-    // This top version will run standardization on all compounds
-    // $.post(`/checkerstart/dataset${datasetId}?standard=true`, {})
-    $.post(`/checkerstart/dataset${datasetId}`, {})
+    $.post(startUrl, {})
         .done( function(retJson) {
             initRunningProgress(datasetId);
-            updateProgress(datasetId, retJson.task_id);
+            monitorChecker(datasetId, retJson.task_id);
         }).fail( () => {
             alert('Failed to start checker for dataset '+datasetId);
         });
 }
 
+function startStandardization(datasetId) {
+    $.post(`/standardize/dataset${datasetId}`, {})
+        .done( () => {
+            monitorStandardization(datasetId, retJson.task_id);
+        }).fail( () => {
+            alert('Failed to start standardization for dataset '+datasetId);
+        });
+}
+
+
 function markComplete(idString) {
     statusObject = $(idString).children("i");
     statusObject.removeClass("fa-times-circle").removeClass("red");
+    statusObject.removeClass("fa-clock").removeClass("yellow");
     statusObject.addClass("fa-check-circle").addClass("green");
 }
 
@@ -166,22 +206,26 @@ async function main() {
     try {
         var datasetIds = await collectDatasetIds();
         console.log('Datasets ids: [' + datasetIds.join(', ') + ']');
-        var [runningDatasets, completeDatasets] = await getRunningDatasets(datasetIds);
+        var [standardDatasets, runningDatasets, completeDatasets] = await getRunningDatasets(datasetIds);
+        console.log('Standardizing Datasets: [' + Object.keys(standardDatasets).join(', ') + ']');
         console.log('Running Datasets: [' + Object.keys(runningDatasets).join(', ') + ']');
         console.log('Complete Datasets: [' + completeDatasets.join(', ') + ']');
 
-        for (var idw of completeDatasets) {
-            resolveUrl = `/admin/resolve/dataset${idw}`;
-            completeDataset(idw, resolveUrl);
+        for (var idv of completeDatasets) {
+            resolveUrl = `/admin/resolve/dataset${idv}`;
+            completeDataset(idv, resolveUrl);
         }
 
+        for (var idw of Object.keys(standardDatasets)) {
+            let taskId = standardDatasets[idw];
+            monitorStandardization(idw, taskId);
+        }
+
+        // Run monitoring of datasets
         for (var idx of Object.keys(runningDatasets)) {
             initRunningProgress(idx);
-        }
-        // Run monitoring of datasets
-        for (var idy of Object.keys(runningDatasets)) {
-            let taskId = runningDatasets[idy];
-            launchMonitoring(idy, taskId);
+            let taskId = runningDatasets[idx];
+            monitorChecker(idx, taskId);
         }
     } catch(err) {
         console.log(err);

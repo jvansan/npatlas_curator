@@ -12,6 +12,8 @@ The app has been configured to run using Docker with three containers:
 
 In theory, these should be able to be started using docker-compose:
 
+**NOTE** The docker-compose.yml is sorely out of date.
+
 ```
 docker-compose build
 docker-compose up
@@ -87,3 +89,16 @@ docker build -t my-nginx:latest -t my-nginx:<VERSION> \
 docker run --name nginx -v /etc/letsencrypt:/etc/letsencrypt \
 --link curator -d -p 80:80 -p 443:443 my-nginx:latest
 ```
+
+5) *Redis Container*
+
+The "Checker" portion of the curator app requires a Redis messaging queue
+in order to run the Celery tasks. This server can be started by running:
+
+```
+docker run --name my-redis -p 6379:6379 -d redis
+```
+
+6) *Celery Container*
+
+Still need to figure this part out!

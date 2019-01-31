@@ -81,7 +81,6 @@ class Dataset(db.Model):
     last_article_id = db.Column(db.Integer, db.ForeignKey('article.id'))
     instructions = db.Column(db.String(1000))
     completed = db.Column(db.Boolean, default=False)
-    standardized = db.Column(db.Boolean, default=False)
     articles = db.relationship('Article', secondary=dataset_article,
                                backref=db.backref('datasets', lazy=True))
     training = db.Column(db.Boolean, default=False)
@@ -106,18 +105,24 @@ class Dataset(db.Model):
         Send a zero if not assigned - useful for admin access to data
         """
         return self.curator.id if self.curator else 0
+    
+    def standard_running(self):
+        return (not self.checker_dataset.standardized and 
+                not self.checker_dataset.completed
+                if self.checker_dataset else False)
 
     def checker_running(self):
-        """
-        Boolean return if checker dataset exists and is running
-        """
-        return not self.checker_dataset.completed if self.checker_dataset else False
+        return (self.checker_dataset.standardized and
+                self.checker_dataset.running
+                if self.checker_dataset else False)
 
     def checker_completed(self):
         """
         Boolean return if checker dataset exists and has completed checking
         """
-        return self.checker_dataset.completed if self.checker_dataset else False
+        return (self.checker_dataset.standardized and 
+                self.checker_dataset.completed
+                if self.checker_dataset else False)
 
     def checker_task_id(self):
         """
@@ -181,6 +186,8 @@ class CheckerDataset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
     celery_task_id = db.Column(db.String(48), nullable=False)
+    standardized = db.Column(db.Boolean, default=False)
+    running = db.Column(db.Boolean, default=False)
     completed = db.Column(db.Boolean, default=False)
     inserted = db.Column(db.Boolean, default=False)
 
@@ -223,6 +230,7 @@ class CheckerCompound(db.Model):
     mibig_id = db.Column(db.Integer)
     pubchem_id = db.Column(db.Integer)
     berdy_id = db.Column(db.Integer)
+    resolve = db.Column(db.Integer)
 
     def get_article_id(self):
         article = self.compound.article[0]
@@ -360,3 +368,18 @@ class Problem(db.Model):
     compound_id = db.Column(db.Integer, db.ForeignKey('compound.id'))
     problem = db.Column(db.String(255), nullable=False)
     resolved = db.Column(db.Boolean, default=False)
+
+
+# Famous retractions
+class Retraction(db.Model):
+    """
+    Retraction table/model
+
+    Attributes
+    ----------
+    """
+    __tablename__ = "retractions"
+    id = db.Column(db.Integer, primary_key=True)
+    article_doi = db.Column(db.String(255))
+    compound_name = db.Column(db.String(255))
+    compound_inchikey = db.Column(db.String(255))

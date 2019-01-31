@@ -4,11 +4,12 @@ import time
 
 from .. import db
 from ..models import (CheckerArticle, CheckerCompound, CheckerDataset, Dataset,
-                      Genus, Journal, Problem)
+                      Genus, Journal, Problem, Retraction)
 from ..utils import pubchem_search
 from ..utils.atlasdb import atlasdb
 from .Compound import Compound
 from .NameString import NameString, decapitalize_first
+from .ResolveEnum import ResolveEnum
 
 # This unit contains far too much tight coupling between checker and flask app
 
@@ -45,12 +46,17 @@ class Checker(object):
             logger.info("PROGRESS: {}/{}\nStatus: {}"\
                   .format(current, total, status))
 
-    def run(self, standardize_compounds=False):
+    def run(self, standardize_compounds=False, restart=False):
         self.logger.info("Setting up dataset")
         dataset = Dataset.query.get_or_404(self.dataset_id)
         total = len(dataset.articles)
 
         for i, article in enumerate(dataset.get_articles()):
+
+            # Safely skip over previously retracted articles
+            if self.check_reject_article(article):
+                article.is_nparticle = False
+                commit()
             
             # Skip over articles which are not properly curated
             if (not article.completed or article.needs_work 
@@ -58,27 +64,27 @@ class Checker(object):
                 self.logger.warning("Skipping article {}!".format(article.id))
                 continue
 
-            check_art = self.create_checker_article(article)
+            check_art = self.create_checker_article(article, restart=restart)
 
             self.update_status(i, total, check_art.doi)
             self.check_article(check_art)
 
             for compound in article.compounds:
                 check_compound = self.create_checker_compound(
-                    compound, standardize=standardize_compounds)
+                    compound, standardize=standardize_compounds,
+                    restart=restart)
                 self.check_compound(check_compound)
-
-            # time.sleep(1)
 
         self.logger.info("Done checking!")
         self.logger.info("There are %d problems to review", len(self.review_list))
         self.save_review_list()
         dataset.checker_dataset.completed = True
+        dataset.checker_dataset.running = False
         commit()
 
     def save_review_list(self):
         counter = 0
-        old_problems = Problem.query.filter_by(dataset_id=self.dataset_id).delete()
+        Problem.query.filter_by(dataset_id=self.dataset_id).delete()
         commit()
         for corr in self.review_list:
             counter += 1
@@ -92,8 +98,6 @@ class Checker(object):
             db_add_commit(prob)
 
         self.logger.info("Saved %d problems to DB", counter)
-            
-
 
     def check_article(self, checker_article):
         self.check_article_duplicate(checker_article)
@@ -109,69 +113,94 @@ class Checker(object):
         self.check_abstract(checker_article)
         commit()
 
+    def check_reject_article(self, article):
+        return (bool(Retraction.query.filter_by(article_doi=article.doi).all())
+                if article.doi else None)
+
     def check_compound(self, checker_compound):
         """
         Two main options:
          1 - This compound is already in the Atlas as has been recurated
-            -> checker_compound should have npaid
+            a -> checker_compound should have npaid
+            b -> checker has restarted and problem is resolved ("resolve" not Null)
          2 - This a potentially new compound
         """
-        # Branch 2 - potentially new compound
-        if not checker_compound.npaid:
-            # Check if structure is a duplicate
-            # First find connectivity matches
-            if self.compound_flat_match(checker_compound):
-                if self.compound_full_match(checker_compound):
-                    self.add_problem(checker_compound.get_article_id(), "duplicate",
-                                     comp_id=checker_compound.id)
-            # Impose strict verification for flat matches
-                else:
-                    self.add_problem(checker_compound.get_article_id(), "flat_match",
-                                     comp_id=checker_compound.id)
-            # Check for name match (ignores "Not named")
-            if self.compound_name_match(checker_compound):
-                self.add_problem(checker_compound.get_article_id(), "name_match",
-                                 comp_id=checker_compound.id)
-        # Branch 1 - recurated compound
-        else:
-            pass
-
-        self.check_source_organism(checker_compound)
-
-    @staticmethod
-    def create_checker_article(article, standardize=False):
-        # Start fresh 
-        if article.checker_article:
-            db.session.delete(article.checker_article)
+        if self.check_reject_compound(checker_compound):
+            checker_compound.resolve = ResolveEnum.reject.value
             commit()
 
-        check_art = CheckerArticle(
-            id=article.id,
-            pmid=article.pmid,
-            doi=article.doi,
-            npa_artid=article.npa_artid,
-            journal=article.journal,
-            year=article.year,
-            volume=article.volume,
-            issue=article.issue,
-            pages=article.pages,
-            authors=article.authors,
-            title=article.title,
-            abstract=article.abstract
-        )
+        # If this compound has been checked and resolve don't worry about it's structure
+        if not checker_compound.resolve:
+            # Branch 2 - potentially new compound
+            if not checker_compound.npaid:
+                # Check if structure is a duplicate
+                # First find connectivity matches
+                if self.compound_flat_match(checker_compound):
+                    if self.compound_full_match(checker_compound):
+                        self.add_problem(checker_compound.get_article_id(), "duplicate",
+                                        comp_id=checker_compound.id)
+                # Impose strict verification for flat matches
+                    else:
+                        self.add_problem(checker_compound.get_article_id(), "flat_match",
+                                        comp_id=checker_compound.id)
+                # Check for name match (ignores "Not named")
+                if self.compound_name_match(checker_compound):
+                    self.add_problem(checker_compound.get_article_id(), "name_match",
+                                    comp_id=checker_compound.id)
+            # Branch 1 - recurated compound
+            elif checker_compound.npaid:
+                checker_compound.resolve = ResolveEnum.update.value
 
-        db_add_commit(check_art)
+        self.check_source_organism(checker_compound)
+        commit()
+
+    def check_reject_compound(self, compound):
+        res = Retraction.query.filter(Retraction.compound_inchikey==compound.inchikey)\
+                .all()
+        if not res:
+            res = Retraction.query.filter(Retraction.compound_name==compound.name)\
+                    .all()
+        return bool(res)
+
+    @staticmethod
+    def create_checker_article(article, standardize=False, restart=False):
+        # Start fresh if not restarting
+        if article.checker_article and not restart:
+            db.session.delete(article.checker_article)
+            commit()
+        if not restart:
+            check_art = CheckerArticle(
+                id=article.id,
+                pmid=article.pmid,
+                doi=article.doi,
+                npa_artid=article.npa_artid,
+                journal=article.journal,
+                year=article.year,
+                volume=article.volume,
+                issue=article.issue,
+                pages=article.pages,
+                authors=article.authors,
+                title=article.title,
+                abstract=article.abstract
+            )
+
+            db_add_commit(check_art)
+        else:
+            check_art = article.checker_article
+
         return check_art
 
-    def create_checker_compound(self, db_compound, standardize=False):
-        # Start fresh
-        if db_compound.checker_compound:
+    def create_checker_compound(self, db_compound, standardize=False, 
+                                restart=False):
+        # Start fresh if not restarting
+        if db_compound.checker_compound and not restart:
             db.session.delete(db_compound.checker_compound)
             commit()
 
         # Regularize the name
         # Especially important for "not named" or similar
         reg_name = NameString(db_compound.name)
+        reg_name.regularize_name()
 
         # Currently not standardizing because it takes ~10x longer
         reg_compound = Compound(
@@ -182,25 +211,25 @@ class Checker(object):
         reg_compound.cleanStructure()
 
         genus, species = split_source_organism(db_compound.source_organism)
-        check_compound = CheckerCompound(
-            id=db_compound.id,
-            name=reg_name.get_name(),
-            formula=reg_compound.formula,
-            smiles=reg_compound.smiles,
-            inchi=reg_compound.inchi,
-            inchikey=reg_compound.inchikey,
-            molblock=reg_compound.molblock,
-            source_genus=genus,
-            source_species=species,
-            npaid=db_compound.npaid
-        )
-        self.parse_external_ids(check_compound, db_compound)
+        if not restart:
+            check_compound = CheckerCompound(
+                id=db_compound.id,
+                name=reg_name.get_name(),
+                formula=reg_compound.formula,
+                smiles=reg_compound.smiles,
+                inchi=reg_compound.inchi,
+                inchikey=reg_compound.inchikey,
+                molblock=reg_compound.molblock,
+                source_genus=genus,
+                source_species=species,
+                npaid=db_compound.npaid
+            )
+            self.parse_external_ids(check_compound, db_compound)
 
-        # We don't care about these yet...
-        # if not check_compound.pubchem_id:
-        #     self.get_checker_compound_cid(check_compound)
+            db_add_commit(check_compound)
+        else:
+            check_compound = db_compound.checker_compound
 
-        db_add_commit(check_compound)
         return check_compound
 
     @staticmethod
@@ -514,8 +543,17 @@ def split_source_organism(org_string):
     data = [x for x in org_string.split(' ') if x]
     # Check data makes sense
     if len(data) > 1:
-        genus = data[0]
-        species = ' '.join(data[1:])
+        if data[0] in ["Unknown", "unknown"]:
+            genus_index = 2
+        else:
+            genus_index = 1
+        genus = "-".join(data[:genus_index])
+        try:
+            species = ' '.join(data[genus_index:])
+        except IndexError:
+            species = "sp."
+        if not species:
+            species = "sp."
         species = clean_species(species)
     else:
         genus = data[0]

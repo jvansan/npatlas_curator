@@ -1,18 +1,18 @@
-import os
 import json
+import os
 from collections import Counter
-from flask import (abort, flash, redirect, render_template, url_for,
-                   request, jsonify, session, current_app)
+
+from flask import (abort, current_app, flash, jsonify, redirect,
+                   render_template, request, session, url_for)
 from flask_login import current_user, login_required
 from rdkit.Chem import AllChem as Chem
 from requests.exceptions import RequestException
 
 from . import data
-from .. import db, celery
-from .forms import ArticleForm
-from ..models import Article, Dataset, Compound, Curator, dataset_article
-from ..utils.pubchem_smiles_standardizer import get_standardized_smiles
+from .. import celery, db
+from ..models import Article, Compound, Curator, Dataset, dataset_article
 from ..utils.NoneDict import NoneDict
+from .forms import ArticleForm
 
 
 #####################################################################
@@ -221,8 +221,6 @@ def article(cur_id, ds_id, art_id):
         article.completed = True
         if len([art for art in dataset.articles if art.completed]) == len(dataset.articles):
             dataset.completed = True
-            if not dataset.training:
-                standardize_dataset.delay(ds_id)
             flash('Dataset completed!!')
         elif dataset.articles.index(article) == len(dataset.articles) - 1:
             skip = True
@@ -385,20 +383,6 @@ def smilesToMolblock():
                                  smiles)
         return jsonify({'success': 0})
 
-
-@celery.task
-def standardize_dataset(ds_id):
-    dataset = Dataset.query.get(ds_id)
-    for compound in dataset.get_compounds():
-        smiles = compound.smiles
-        try:
-            compound.smiles = get_standardized_smiles(smiles)
-            db.session.commit()
-        except (ValueError, TypeError, RequestException):
-            print("Error standardzing SMILES %s", smiles)
-            db.session.rollback()
-    dataset.standardized = True
-    db.session.commit()
 
 #####################################################################
 ###                      HELPER FUNCTIONS                         ###

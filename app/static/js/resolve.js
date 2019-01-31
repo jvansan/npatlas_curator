@@ -1,18 +1,23 @@
 // Journal/Genus hide/show appropriate input
+// Compound hide-show NPAID replace form
 $(() => {
     showJournal();
     showGenus();
+    showNPAID();
     $("#journalSelect").change(() => {
         showJournal();
     });
     $("#genusSelect").change(() => {
         showGenus();
     });
+    $("#compoundSelect").change(() => {
+        showNPAID();
+    });
 });
 
 
 // Journal auto-complete
-$(function() {
+$(() => {
     $(".altJournal").autocomplete({
         source: (request, response) => {
             $.getJSON("/_search_journal", {
@@ -26,7 +31,7 @@ $(function() {
 });
 
 // Genus auto-complete
-$(function() {
+$(() => {
     $(".altGenus").autocomplete({
         source: (request, response) => {
             $.getJSON("/_search_genus", {
@@ -39,6 +44,16 @@ $(function() {
         minLength: 2,
     });
 });
+
+
+function showNPAID() {
+    selected = $("#compoundSelect").children("option:selected").val();
+    if (selected === "replace") {
+        $("#npaid").show();
+    } else {
+        $("#npaid").hide();
+    }
+}
 
 function showJournal() {
     selected = $("#journalSelect").children("option:selected").val();

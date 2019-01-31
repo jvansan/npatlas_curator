@@ -47,6 +47,11 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <div class="row" style="justify-content: center">
+                <button class="btn btn-success" role="button" onclick="startChecker( {{ ds_id }} )">
+                    Restart Checker?
+                </button>
+            </div>
         </div>
     {% else %}
         <div>
@@ -56,4 +61,15 @@
         </div>
     {% endif %}
 </section>
+
+<script>
+function startChecker(datasetId) {
+    $.post(`/checkerstart/dataset${datasetId}?restart=true`, {})
+        .done( function(retJson) {
+            window.location.replace("{{ url_for('admin.list_datasets') }}")
+        }).fail( () => {
+            alert('Failed to start checker for dataset '+datasetId);
+        });
+}
+</script>
 {% endblock %}
