@@ -83,7 +83,7 @@ class Dataset(db.Model):
     completed = db.Column(db.Boolean, default=False)
     articles = db.relationship('Article', secondary=dataset_article,
                                backref=db.backref('datasets', lazy=True))
-    training = db.Column(db.Boolean, default=False)
+    training = db.Column(db.Integer, default=0)
     checker_dataset = db.relationship('CheckerDataset', uselist=False,
                                       backref='dataset')
     problems = db.relationship('Problem', backref='dataset')

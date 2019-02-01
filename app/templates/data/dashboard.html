@@ -21,7 +21,7 @@
             </thead>
             <tbody>
                 {% for dataset in datasets %}
-                    {% if dataset.completed and not dataset.standardized and not dataset.training %}
+                    {% if dataset.completed and dataset.checker_dataset.running and not dataset.checker_dataset.standardized and not dataset.training %}
                         <tr class="red-background">
                     {% else %}
                         <tr>

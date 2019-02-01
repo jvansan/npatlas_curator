@@ -13,3 +13,5 @@ mysql-dumps/*
 # For playground purposes
 curator_env/
 
+# Self signed certs for test deployment
+certs/

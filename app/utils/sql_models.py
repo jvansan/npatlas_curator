@@ -64,7 +64,7 @@ class Dataset(Base):
     completed = Column(Boolean, default=False)
     articles = relationship('Article', secondary=dataset_article,
                                backref=backref('datasets', lazy=True, cascade="all"))
-    training = Column(Boolean, default=False)
+    training = Column(Integer, default=0)
 
 
 class Article(Base):

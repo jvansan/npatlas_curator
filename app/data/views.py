@@ -57,10 +57,12 @@ def trainingscore(cur_id, ds_id):
     """Score and render training set diffs at 
        '/data/curator<int:id>/dataset<int:ds_id>/traningset'
     """
+    # Get dataset
+    dataset = Dataset.query.get_or_404(ds_id)
     # Check that scoring scheme JSON exists
     # load it if it does
     # Throw 500 error if not
-    ts_path = os.path.join('app','static','training-set.json')
+    ts_path = os.path.join('app','static','training-set-{}.json'.format(dataset.training))
     current_app.logger.debug("Loading training set solutions, {}".format(ts_path))
     if not os.path.isfile(ts_path):
         current_app.logger.debug("Training set file could not be loaded")
@@ -69,9 +71,6 @@ def trainingscore(cur_id, ds_id):
         with open(ts_path, 'r') as f:
             training_set_data = json.load(f)
         current_app.logger.debug("Successfully got training set solutions")
-
-    # Get dataset
-    dataset = Dataset.query.get_or_404(ds_id)
 
     # Check user is allowed to access dataset
     if dataset.curator_id != current_user.id and not current_user.is_admin:
