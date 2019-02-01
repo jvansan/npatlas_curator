@@ -28,13 +28,13 @@ RUN conda create -n curator -c rdkit rdkit
 RUN /bin/bash -c "source activate curator && pip install -r requirements.txt"
 
 ENV FLASK_APP "run.py"
-ENV FLASK_CONFIG=production
-ENV FLASK_ENV=production
+ENV FLASK_CONFIG=development
+ENV FLASK_ENV=development
 EXPOSE 5000
 
 RUN apt-get update && apt-get install -y libxrender-dev mysql-client
-RUN /bin/bash -c "source activate curator && conda install -c conda-forge uwsgi libiconv"
-RUN useradd -ms /bin/bash uwsgi
+RUN /bin/bash -c "source activate curator && pip install celery"
+RUN useradd -ms /bin/bash celery
 
 ADD . /curator
-CMD /bin/bash -c "source activate curator && uwsgi --ini curator.ini"
+CMD /bin/bash -c "source activate curator && celery worker -A celery_worker.celery --loglevel=info --uid celery "

@@ -8,4 +8,18 @@
             <hr class="intro-divider">
         </div>
     </div>
+    <br>
+    <div class="row">
+        <div class="col-1"></div>
+        <div class="col-5 text-center info-box">
+            <a href="{{ url_for('admin.list_datasets') }}">
+                <h3>Go to Datasets/Checker</h3>
+            </a>
+        </div>
+        <div class="col-5 text-center info-box">
+            <a href="{{ url_for('admin.list_articles') }}">
+                <h3>List All Articles</h3>
+            </a>
+        <div class="col-1"></div>
+    </div>
 {% endblock %}

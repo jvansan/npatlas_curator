@@ -21,7 +21,11 @@
             </thead>
             <tbody>
                 {% for dataset in datasets %}
-                    <tr>
+                    {% if dataset.completed and dataset.checker_dataset.running and not dataset.checker_dataset.standardized and not dataset.training %}
+                        <tr class="red-background">
+                    {% else %}
+                        <tr>
+                    {% endif %}
                         {% if dataset.articles|length == 0 %}
                             <td> <em>No Articles</em> </td>
                         {% elif dataset.completed %}
@@ -51,6 +55,11 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div>
+        <p>
+            <b>Note:</b> a red background indicates a background task is running on the dataset. Please do not edit it until this task has stopped.
+        </p>
     </div>
     {% else %}
     <hr class="intro-divider">

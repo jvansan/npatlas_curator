@@ -12,6 +12,8 @@ The app has been configured to run using Docker with three containers:
 
 In theory, these should be able to be started using docker-compose:
 
+**NOTE** The docker-compose.yml is sorely out of date.
+
 ```
 docker-compose build
 docker-compose up
@@ -72,14 +74,15 @@ mysql -u<DB_USER> -p<DB_PASSWORD> -h<DBSERVER> npatlas_curation < dump.sql
 ```
 docker build -t curator:latest -t curator:<VERSION> .
 docker run --name curator -p 5000:5000 --link mysql:dbserver \
--e DBSERVER=dbserver -d curator:latest
+-e DBSERVER=dbserver -d curator:latest -v .:/curator
 ```
 
 4) *Nginx Container*
 
 I have created a simple custom Dockerfile to simplify deployment.
 You can set the `SERVER_NAME` environment variable during build time,
-or else it will default to `localhost`.
+or else it will default to `localhost`. In development you may wish to use
+a self signed certificate in place of a letsencrypt one.
 
 ```
 docker build -t my-nginx:latest -t my-nginx:<VERSION> \
@@ -87,3 +90,16 @@ docker build -t my-nginx:latest -t my-nginx:<VERSION> \
 docker run --name nginx -v /etc/letsencrypt:/etc/letsencrypt \
 --link curator -d -p 80:80 -p 443:443 my-nginx:latest
 ```
+
+5) *Redis Container*
+
+The "Checker" portion of the curator app requires a Redis messaging queue
+in order to run the Celery tasks. This server can be started by running:
+
+```
+docker run --name my-redis -p 6379:6379 -d redis
+```
+
+6) *Celery Container*
+
+Still need to figure this part out!

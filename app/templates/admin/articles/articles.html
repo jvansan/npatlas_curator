@@ -21,7 +21,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for article in articles %}
+                {% for article in articles.items %}
                     <tr>
                         <td><a href="{{ article_redirect(article.id) }}">{{ article.id }}</a></td>
                         <td>{{ article.journal }}</td>
@@ -32,6 +32,15 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div style="text-align: center; padding-bottom: 5%">
+            {% if prev_url %}
+                <a href="{{ prev_url }}"><i class="fas fa-arrow-left fa-2x"></i></a>
+            {% endif %}
+            {% if next_url %}
+                <a href="{{ next_url }}"><i class="fas fa-arrow-right fa-2x"></i></a>
+            {% endif %}
+            <p>{{ articles.page }}/{{ articles.pages }}</p>
+        </div>
     </div>
     {% else %}
         <hr class="intro-divider">

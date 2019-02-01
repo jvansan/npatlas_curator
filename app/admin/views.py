@@ -1,26 +1,51 @@
 from functools import wraps
-from flask import flash, render_template, url_for, abort, redirect
-from flask_login import login_required, current_user
+
+from flask import (abort, flash, redirect, render_template, request, url_for,
+                   current_app)
+from flask_login import current_user, login_required
 
 from . import admin
-from ..data import data
-from .forms import CuratorForm
-from ..data.forms import ArticleForm, CompoundForm
-from ..models import Curator, Article, Compound
 from .. import db
+from ..data import data
+from ..data.forms import ArticleForm, CompoundForm
+from ..models import Article, Compound, Curator, Dataset
+from .forms import CuratorForm
 
 
 def require_admin(func):
     """
     Decorator to prevent non-admins from accessing the page
+    When in development environment this is ignored
     """
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_admin:
-            abort(403)
+        if not current_app.config.get("LOGIN_DISABLED", False):
+            if not current_user.is_admin:
+                abort(403)
         return func(*args, **kwargs)
 
     return decorated_function
+
+
+@admin.route('/admin/datasets')
+@login_required
+@require_admin
+def list_datasets():
+    """
+    List all datasets and give checker access
+    """
+    # Get page
+    page = request.args.get('page', 1, type=int)
+
+    datasets = Dataset.query.order_by(Dataset.id.desc()).paginate(page, 10, False)
+
+    next_url = url_for("admin.list_datasets", page=datasets.next_num)\
+        if datasets.has_next else None
+    prev_url = url_for("admin.list_datasets", page=datasets.prev_num)\
+        if datasets.has_prev else None
+
+    return render_template('admin/datasets.html', datasets=datasets, title='Add Datasets',
+                           next_url=next_url, prev_url=prev_url)
 
 
 @admin.route('/admin/articles')
@@ -30,11 +55,17 @@ def list_articles():
     """
     List all articles
     """
+    page = request.args.get('page', 1, type=int)
+    articles = Article.query.paginate(page, 10, False)
 
-    articles = Article.query.all()
+    next_url = url_for("admin.list_articles", page=articles.next_num)\
+        if articles.has_next else None
+    prev_url = url_for("admin.list_articles", page=articles.prev_num)\
+        if articles.has_prev else None
 
     return render_template('admin/articles/articles.html', articles=articles, title='All Articles',
-                            article_redirect=lambda x: url_for('admin.article', id=x))
+                            article_redirect=lambda x: url_for('admin.article', id=x),
+                            next_url=next_url, prev_url=prev_url)
 
 
 @admin.route('/admin/articles/article<int:id>', methods=['GET', 'POST'])

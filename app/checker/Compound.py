@@ -24,13 +24,13 @@ class Compound(object):
             kwargs:
             :name (str) - Default = "Unknown" - Name of compound, also sets
                           name in Molblock
-            :standardize (bool) - Default = True - Control whether SMILES is
+            :standardize (bool) - Default = False - Control whether SMILES is
                                   subject to PubChem Standardization attempt
         """
 
         # Standardize as a kwarg to allow disabling PubChem Standardization
         # explicitly
-        standardize = kwargs.get("standardize", True)
+        standardize = kwargs.get("standardize", False)
         if standardize:
             # Try to standardize the smiles, will time out after 5 seconds
             # and resort to supplied smiles string

@@ -1,0 +1,75 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Resolve Dataset{% endblock %}
+{% block body %}
+<section class="container-fluid">
+    {{ utils.flashed_messages() }}
+    <h1 class="text-center">
+        Problems for Dataset {{ ds_id }}
+    </h1>
+    <hr class="intro-divider">
+    {% if problems %}
+        <div class="text-center">
+            There are {{ problems|length }} problems for this dataset.
+            <br>
+        </div>
+        <div>
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Problem</th>
+                        <th>Article ID</th>
+                        <th>Compound ID</th>
+                        <th>Resolved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prob in problems %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('checker.resolve_problem', ds_id=prob.dataset_id, prob_id=prob.id) }}">
+                                {{ prob.id }}
+                            </a>
+                        </td>
+                        <td> {{ prob.problem }} </td>
+                        <td> {{ prob.article_id }} </td>
+                        <td> {{ prob.compound_id or '-' }} </td>
+                        <td>
+                            {% if prob.resolved %}
+                                <i class="far fa-check-circle green"></i>
+                            {% else %}
+                                <i class="far fa-times-circle red"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="row" style="justify-content: center">
+                <button class="btn btn-success" role="button" onclick="startChecker( {{ ds_id }} )">
+                    Restart Checker?
+                </button>
+            </div>
+        </div>
+    {% else %}
+        <div>
+            <h3 class="text-center">
+                No problems for this dataset!
+            </h3>
+        </div>
+    {% endif %}
+</section>
+
+<script>
+function startChecker(datasetId) {
+    $.post(`/checkerstart/dataset${datasetId}?restart=true`, {})
+        .done( function(retJson) {
+            window.location.replace("{{ url_for('admin.list_datasets') }}")
+        }).fail( () => {
+            alert('Failed to start checker for dataset '+datasetId);
+        });
+}
+</script>
+{% endblock %}

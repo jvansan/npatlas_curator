@@ -1,0 +1,264 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}Resolve Issue{% endblock %}
+{% block body%}
+<link rel="stylesheet" href="{{ url_for('static', filename='js/kekule/themes/default/kekule.css') }}">
+<script src="../../../static/js/kekule/kekule.js?modules=chemWidget"></script>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible" role="alert" style="display:none">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <!-- <strong>Title</strong> --> {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+<section class="container">
+    <div class="text-center">
+        <h1>Resolve Issue</h1>
+        <h2>
+            Problem: {{ problem.problem }}
+        </h2>
+        <!-- <hr class="intro-divider"> -->
+    </div>
+    <div>
+        <a href=" {{ url_for('checker.problem_list', ds_id=ds_id) }}">
+            Return to List
+        </a>
+        <hr class="full-divider">
+    </div>
+    <div class="container" class="info-section">
+        <div class="row">
+            <div class="col-lg-6">
+                {% if article.doi %}
+                    {% set dlink = "http://doi.org/"+article.doi %}
+                    {% set dblank = "_blank" %}
+                {% else %}
+                    {% set dlink = "#" %}
+                    {% set dblank = "_self" %}
+                {% endif %}
+                <b>DOI:</b>  <a href="{{ dlink }}" target="{{ dblank }}"> {{ article.doi or '-' }} </a>
+            </div>
+            <div class="col-lg-6">
+                {% if article.pmid %}
+                    {% set plink = "https://www.ncbi.nlm.nih.gov/pubmed/"+article.pmid|string %}
+                    {% set pblank = "_blank" %}
+                {% else %}
+                    {% set plink = "#" %}
+                    {% set pblank = "_self" %}
+                    {% endif %}
+                <b>PMID:</b>  <a href="{{ plink }}" target="{{ pblank }}">{{ article.pmid or '-' }}</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>NPA Article ID:</b> {{ article.npa_artid or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Title:</b>  {{ article.title or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Authors:</b>  {{ article.authors or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Journal:</b>  {{ article.journal or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <b>Abstract:</b>  {{ article.abstract or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <b>Year:</b>  {{ article.year or '-' }}
+            </div>
+            <div class="col-lg-6">
+                <b>Pages:</b>  {{ article.pages or '-' }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <b>Volume:</b>  {{ article.volume or '-' }}
+            </div>
+            <div class="col-lg-6">
+                <b>Issue:</b>  {{ article.issue or '-' }}
+            </div>
+        </div>
+    </div>
+    <hr class="full-divider">
+    {% if compound %}
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <b>Name:</b>    {{ compound.name }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <b>SMILES:</b>    {{ compound.smiles }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <b>Genus:</b>  {{ compound.source_genus }}
+                </div>
+                <div class="col-lg-6">
+                    <b>Species:</b>  {{ compound.source_species }}
+                </div>
+            </div>
+        </div>
+        <hr class="full-divider">
+    {% endif %}
+    <div class="container">
+        <div>
+            <h3>
+                Problem: {{ problem.problem }}
+            </h3>
+        </div>
+        {% if problem.problem == "journal" %}
+            <h4>
+                Value: {{ article.journal }}
+            </h4>
+            <form method="POST" class="form-horizontal">
+                {{ form.value() }}
+                <div class="row form-group">
+                    {{ form.select.label(class_="control-label col-lg-2") }}
+                    {{ form.select(class="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.alt_journal.label(class_="control-label altJournal") }}
+                    {{ form.alt_journal(class_="altJournal form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.new_journal_full.label(class_="control-label newJournal") }}
+                    {{ form.new_journal_full(class_="newJournal form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.new_journal_abbrev.label(class_="control-label newJournal") }}
+                    {{ form.new_journal_abbrev(class_="newJournal form-control") }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-success', type='submit') }}
+                </div>
+            </form>
+
+        {% elif problem.problem == "genus" %}
+            <h4>
+                Value: {{ compound.genus }}
+            </h4>
+            <form method="POST" class="form-horizontal">
+                {{ form.value() }}
+                <div class="row form-group">
+                    {{ form.select.label(class_="control-label col-lg-2") }}
+                    {{ form.select(class="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.genus_type.label(class_="control-label") }}
+                    {{ form.genus_type(class_="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.new_genus_name.label(class_="control-label newGenus") }}
+                    {{ form.new_genus_name(class_="newGenus form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.alt_genus_name.label(class_="control-label altGenus") }}
+                    {{ form.alt_genus_name(class_="altGenus form-control") }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-success', type='submit') }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.reject(class_='btn btn-danger', type='submit') }}
+                </div>
+            </form>
+        {% elif problem.problem == "flat_match" or problem.problem == "duplicate" or problem.problem == "name_match" %}
+            <h4>
+                Candidate
+            </h4>
+            <h5>
+                Name: {{ compound.name }}
+            </h5>
+            <h5>
+                InChIKey: {{ compound.inchikey }}
+            </h5>
+            <div class="row" style="justify-content: center">
+                <script id="compound-{{ compound.id }}-molblock" type="chemical/x-mdl-molfile">
+                {{ compound.molblock }}
+                </script>
+                <span style="display:block" data-widget="Kekule.ChemWidget.Viewer2D"
+                data-chem-obj="url(#compound-{{ compound.id }}-molblock)" data-predefined-setting="static" data-auto-size="true"
+                data-zoom="0.5">
+                </span>
+            </div>
+            <hr class="intro-divider">
+            <div class="container">
+                {% for comp in npa_compounds %}
+                    <h5>
+                        Name: {{ comp.name }}
+                    </h5>
+                    <h5>
+                        NPAID: <a href="https://npatlas-dev.chem.sfu.ca/joomla/index.php/explore/compounds#npaid={{ comp.npaid }}" target="_blank">
+                                    {{ comp.npaid }}
+                                </a>
+                    </h5>
+                    <h5>
+                        InChIKey: {{ comp.inchikey }}
+                    </h5>
+                    <div style="justify-content: center"></div>
+                        <script id="compound-{{ comp.npaid }}-molblock" type="chemical/x-mdl-molfile">
+                            {{ comp.molblock }}
+                        </script>
+                        <span style="display:block" data-widget="Kekule.ChemWidget.Viewer2D"
+                        data-chem-obj="url(#compound-{{ comp.npaid }}-molblock)" data-predefined-setting="static" data-auto-size="true"
+                        data-zoom="0.5">
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+            <hr class="full-divider">
+            <h4>
+                Resolve:
+            </h4>
+            <form method="POST" class="form-horizontal">
+                {{ form.value() }}
+                <div class="row form-group">
+                    {{ form.select.label(class_="control-label col-lg-2") }}
+                    {{ form.select(class="form-control") }}
+                </div>
+                <div class="row form-group" id="npaid">
+                    {{ form.npaid.label(class_="control-label col-lg-2") }}
+                    {{ form.npaid(class="form-control") }}
+                </div>
+                <div class="row form-group">
+                    {{ form.notes.label(class_="control-label col-lg-2") }}
+                    {{ form.notes(class="form-control") }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.hidden_tag() }} {{ form.submit(class_='btn btn-success', type='submit') }}
+                </div>
+                <div class="row form-group" style="justify-content:center">
+                    {{ form.reject(class_='btn btn-danger', type='submit') }}
+                </div>
+            </form>
+        {% else %}
+            {{ wtf.quick_form(form, button_map={'submit':'success'}) }}
+        {% endif %}
+        <div class="row" style="justify-content: center">
+            <a class="btn btn-info" href=" {{url_for('data.article', cur_id=cur_id, ds_id=ds_id, art_id=article.id)}} ">
+                Edit Article?
+            </a>
+        </div>
+    </div>
+</section>
+<script src="{{ url_for('static', filename='js/resolve.js') }}"></script>
+{% endblock %}

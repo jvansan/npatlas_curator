@@ -5,8 +5,8 @@
 <section class="container-fluid">
     {{ utils.flashed_messages() }}
     <h1 style="text-align:center;">Articles</h1>
-    {% if articles %}
     <hr class="intro-divider">
+    {% if articles %}
     <div class="center">
         <table class='table table-striped'>
             <thead>
@@ -55,7 +55,6 @@
         </div>
     </div>
     {% else %}
-        <hr class="intro-divider">
         <div>
             <h3 style="text-align:center;">
                 No current articles

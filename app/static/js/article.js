@@ -12,7 +12,7 @@ $(document).ready(() => {
 
     // variables
     const regex = /^10.\d{4,9}\//g;
-    var currentPath = window.location.pathname
+    var currentPath = window.location.pathname;
 
     // Define Kekule Toolbar preset
     Kekule.ObjPropSettingManager.register('Kekule.ChemWidget.Viewer.customPreset', {
@@ -22,14 +22,14 @@ $(document).ready(() => {
         toolButtons: ['saveData', 'molDisplayType', 'zoomIn', 'zoomOut',
                       'rotateLeft', 'rotateRight', 'reset'
                     ]
-    })
+    });
 
     // Show all alerts except the one which arises when you add a new compound
     $(".alert").each(function() {
         if (!$(this).text().includes("Error in the Compounds field - {'name': ")) {
             $(this).show();
         }
-    })
+    });
 
     // Draw compounds on page load
     $(".smiles-input").each(function() {
@@ -41,7 +41,7 @@ $(document).ready(() => {
     // Add tab buttons and menu items for each compound
     $(".compound-row").each( function() {
         let $this = $(this);
-        let rowNum = get_idx($this)
+        let rowNum = get_idx($this);
         let compoundName = $this.find("#compounds-"+rowNum+"-name").val();
         let compoundKnown = $this.find("#compounds-"+rowNum+"-npaid").val();
         if (compoundName.length == 0) {
@@ -63,10 +63,10 @@ $(document).ready(() => {
         let menuItemString = "<li role='presentation'><button class='compound-menu' role='menuitem' id='compound-menu-"+rowNum+"' type=button>";
         menuItemString = menuItemString + compoundName + "</a></li>";
         $("#compoundMenu").append(menuItemString);
-    })
+    });
 
     // Show correct # of compounds on menu
-    updateMenuCount()
+    updateMenuCount();
 
     // Hide all but first for compound field unless just added new compound
     // If new compound (catching by error), show that one
@@ -75,8 +75,8 @@ $(document).ready(() => {
         let index = $("#session-compId").val();
         $(".compound-row:eq( {} )".format(index)).show();
         $(".compound-tab:eq( {} )".format(index)).addClass("active");
-        $tabDiv = $("#tabDiv")
-        $tabDiv.scrollLeft($tabDiv.width()*100)
+        $tabDiv = $("#tabDiv");
+        $tabDiv.scrollLeft($tabDiv.width()*100);
     } else {
         $(".compound-row").first().show();
         $(".compound-tab").first().addClass("active");
@@ -87,11 +87,11 @@ $(document).ready(() => {
         let $this = $(this);
         let smiles = $this.val().trim();
         // console.log(smiles);
-        let rowNum = get_idx($this)
-        let $canvas = $("#compound-canvas-"+rowNum)
+        let rowNum = get_idx($this);
+        let $canvas = $("#compound-canvas-"+rowNum);
         $canvas.attr("alt", smiles);
         // console.log(smiles.length);
-	    display(rowNum)
+	    display(rowNum);
     });
 
     // Compound select from tabs
@@ -103,7 +103,7 @@ $(document).ready(() => {
         $target.show();
         chemViewers[rowNum].resetDisplay();
         // Scroll tab to center
-        scrolltabDiv(rowNum)
+        scrolltabDiv(rowNum);
         // Make tab appear active
         $(".compound-tab").removeClass("active");
         $(this).addClass("active");
@@ -111,19 +111,20 @@ $(document).ready(() => {
 
     // Compound select from menu
     $(".compound-menu").on("click", function(e) {
-        e.preventDefault()
+        e.preventDefault();
         let rowNum = $(this).attr("id").split("-")[2];
         let $this = $("#compound-tab-"+rowNum);
         let $target = $("#compound-row-"+rowNum);
         // Hide all compound rows first then show target
         $(".compound-row").hide();
         $target.show();
+        chemViewers[rowNum].resetDisplay();
         // Scroll tab to center
-        scrolltabDiv(rowNum)
+        scrolltabDiv(rowNum);
         // Make tab appear active
         $(".compound-tab").removeClass("active");
         $this.addClass("active");
-    })
+    });
 
     // Write Name to Tab after leave input
     $(".name-input").on("blur", function() {
@@ -147,9 +148,9 @@ $(document).ready(() => {
                 if ($(this).parent().text().includes("Number of Compounds field")) {
                     $(this).parent().alert("close");
                 }
-            })
+            });
         }
-    })
+    });
 
     // DOI Linkout
     if ($("input[id='doi']").val().match(regex)) {
@@ -167,13 +168,13 @@ $(document).ready(() => {
             let link = "https://doi.org/" + doi;
             $target.attr("href", link).show();
         } else {
-            $target.attr("href", "#").hide();;
+            $target.attr("href", "#").hide();
         }
     });
 
     // PMID Linkout
     if (parseInt($("input[id='pmid']").val())) {
-        let link = "https://www.ncbi.nlm.nih.gov/pubmed/" + $("input[id='pmid']").val()
+        let link = "https://www.ncbi.nlm.nih.gov/pubmed/" + $("input[id='pmid']").val();
         $("#pmid-link").attr("href", link).show();
     }
 
@@ -196,13 +197,13 @@ $(document).ready(() => {
             url: currentPath
         }).done( function(retJson) {
             // console.log(retJson['url']);
-            if (retJson['url']) {
-                window.location.replace(window.location.origin + '/' + retJson['url']);
+            if (retJson.url) {
+                window.location.replace(window.location.origin + '/' + retJson.url);
             } else {
-                alert("No next article.")
+                alert("No next article.");
             }
         }).fail( function() {
-            alert("Could not access server. Please contact the admin.")
+            alert("Could not access server. Please contact the admin.");
         });
     });
 
@@ -212,13 +213,13 @@ $(document).ready(() => {
             url: currentPath
         }).done( function(retJson) {
             // console.log(retJson['url']);
-            if (retJson['url']) {
-                window.location.replace(window.location.origin + '/' + retJson['url']);
+            if (retJson.url) {
+                window.location.replace(window.location.origin + '/' + retJson.url);
             } else {
-                alert("No previous article.")
+                alert("No previous article.");
             }
         }).fail( function() {
-            alert("Could not access server. Please contact the admin.")
+            alert("Could not access server. Please contact the admin.");
         });
     });
 
@@ -239,8 +240,8 @@ $(document).ready(() => {
             num_compounds: $("#num_compounds").val(),
             needs_work: $("#needs_work").is(":checked"),
             notes: $("#notes").val()
-        }
-        let compounds = []
+        };
+        let compounds = [];
         // Need to collect compound data and send in POST to save data
         $(".compound-row").each(function() {
             let rowNum = parseInt($(this).attr("id").split("-")[2]);
@@ -251,8 +252,8 @@ $(document).ready(() => {
                 source_organism: $("#compounds-{}-source_organism".format(rowNum)).val(),
                 curated_compound: $("#compounds-{}-curated_compound".format(rowNum)).is(":checked")
             };
-            compounds.push(compound)
-        })
+            compounds.push(compound);
+        });
         // Send POST
         $.ajax({
             url: "/data/addCompound",
@@ -260,18 +261,18 @@ $(document).ready(() => {
             data: JSON.stringify({url: currentPath, compounds: compounds, article: article}),
             contentType: "application/json; charset=utf-8",
             success: function(retJson) {
-                    if (retJson['url']) {
-                        window.location.replace(window.location.origin + '/' + retJson['url']);
+                    if (retJson.url) {
+                        window.location.replace(window.location.origin + '/' + retJson.url);
                     } else {
-                        alert("Something else happended...")
+                        alert("Something else happended...");
                     }
                     window.location=window.location;
                 },
             error: function() {
-                    alert("Could not access server. Please contact admin.")
+                    alert("Could not access server. Please contact admin.");
                 }
-        })
-    })
+        });
+    });
 
     // Remove a compound
     $("#delCompound").on("click", function() {
@@ -295,11 +296,11 @@ $(document).ready(() => {
                         $(this).dialog('close');
                     }
                 }
-            })
+            });
         } else {
             deleteCompound(currentPath, compId);
         }
-    })
+    });
 // END jQUERY DOC READY
 });
 
@@ -321,7 +322,7 @@ function updateMenuCount() {
 }
 
 function scrolltabDiv(rowNum) {
-        let $this = $("#compound-tab-"+rowNum)
+        let $this = $("#compound-tab-"+rowNum);
         // Scroll tab to center
         // Only if not clicking active tab
         if (!($this.hasClass("active"))) {
@@ -342,8 +343,8 @@ function scrolltabDiv(rowNum) {
 
 function deleteCompound(currentPath, compId) {
     if ($(".compound-row").length == 1) {
-        alert("Cannot delete every compound from an article. Please add a real compound before deleting this one.")
-        return
+        alert("Cannot delete every compound from an article. Please add a real compound before deleting this one.");
+        return;
     }
     // Need to save article data and send to POST
     let article = {
@@ -360,8 +361,8 @@ function deleteCompound(currentPath, compId) {
         num_compounds: $("#num_compounds").val(),
         needs_work: $("#needs_work").is(":checked"),
         notes: $("#notes").val()
-    }
-    let compounds = []
+    };
+    let compounds = [];
     // Need to collect compound data and send in POST to save data
     $(".compound-row").each(function() {
         let rowNum = parseInt($(this).attr("id").split("-")[2]);
@@ -372,8 +373,8 @@ function deleteCompound(currentPath, compId) {
             source_organism: $("#compounds-{}-source_organism".format(rowNum)).val(),
             curated_compound: $("#compounds-{}-curated_compound".format(rowNum)).is(":checked")
         };
-        compounds.push(compound)
-    })
+        compounds.push(compound);
+    });
     // Send POST
     $.ajax({
         url: "/data/delCompound",
@@ -381,22 +382,22 @@ function deleteCompound(currentPath, compId) {
         data: JSON.stringify({url: currentPath, compounds: compounds, article: article, compId: compId}),
         contentType: "application/json; charset=utf-8",
         success: function(retJson) {
-                if (retJson['url']) {
-                    window.location.replace(window.location.origin + '/' + retJson['url']);
+                if (retJson.url) {
+                    window.location.replace(window.location.origin + '/' + retJson.url);
                 } else {
-                    alert("Something else happended...")
+                    alert("Something else happended...");
                 }
                 window.location=window.location;
             },
         error: function() {
-                alert("Could not access server. Please contact admin.")
+                alert("Could not access server. Please contact admin.");
             }
     });
 }
 
 // Initialize viewer
 function load_kekule(idx) {
-    let canvas = $("#compound-canvas-{}".format(idx))
+    let canvas = $("#compound-canvas-{}".format(idx));
     // console.log(canvas.get())
     chemViewers.push(new Kekule.ChemWidget.Viewer(canvas.get(0)));
 }
@@ -415,9 +416,9 @@ function get_idx(elem) {
     let idx = elem.attr("id").match(/\d+/);
     // console.log(idx)
     if (idx.length > 0) {
-        return idx[0]
+        return idx[0];
     } else {
-        return
+        return;
     }
 }
 
@@ -428,17 +429,17 @@ function displayAJAX(smi, idx) {
         data: JSON.stringify({smiles: smi}),
         contentType: "application/json; charset=utf-8",
         success: function(retJson){
-            if (retJson['success'] != 1) {
-                alert("Unable to process SMILES.")
+            if (retJson.success != 1) {
+                alert("Unable to process SMILES.");
             } else {
-                molb = retJson['molblock']
+                molb = retJson.molblock;
                 var mol = Kekule.IO.loadFormatData(molb, "mol");
                 chemViewers[idx].setChemObj(mol);
 	        chemViewers[idx].resetDisplay();
             }
         },
         error : function() {
-            alert("Unable to process SMILES.")
+            alert("Unable to process SMILES.");
         }
-    })
+    });
 }

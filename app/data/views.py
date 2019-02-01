@@ -1,21 +1,32 @@
-import os
 import json
+import os
 from collections import Counter
-from flask import (abort, flash, redirect, render_template, url_for,
-                   request, jsonify, session, current_app)
+
+from flask import (abort, current_app, flash, jsonify, redirect,
+                   render_template, request, session, url_for)
 from flask_login import current_user, login_required
 from rdkit.Chem import AllChem as Chem
+from requests.exceptions import RequestException
 
 from . import data
-from .. import db
-from .forms import ArticleForm
-from ..models import Article, Dataset, Compound, Curator, dataset_article
+from .. import celery, db
+from ..models import Article, Compound, Curator, Dataset, dataset_article
 from ..utils.NoneDict import NoneDict
+from .forms import ArticleForm
 
 
 #####################################################################
 ###                      SERVER VIEWS/METHODS                     ###
 #####################################################################
+@data.route("/data")
+@login_required
+def data_redirect():
+    """
+    Redirect user to dashboard
+    """
+    return redirect(url_for('data.curator_dashboard', cur_id=current_user.id))
+
+
 @data.route('/data/curator<int:cur_id>')
 @login_required
 def curator_dashboard(cur_id):
@@ -43,11 +54,15 @@ def curator_dashboard(cur_id):
             methods=['GET', 'POST'])
 @login_required
 def trainingscore(cur_id, ds_id):
-    """Score and render training set diffs at '/data/curator<int:id>/dataset<int:ds_id>/traningset'"""
+    """Score and render training set diffs at 
+       '/data/curator<int:id>/dataset<int:ds_id>/traningset'
+    """
+    # Get dataset
+    dataset = Dataset.query.get_or_404(ds_id)
     # Check that scoring scheme JSON exists
     # load it if it does
     # Throw 500 error if not
-    ts_path = os.path.join('app','static','training-set.json')
+    ts_path = os.path.join('app','static','training-set-{}.json'.format(dataset.training))
     current_app.logger.debug("Loading training set solutions, {}".format(ts_path))
     if not os.path.isfile(ts_path):
         current_app.logger.debug("Training set file could not be loaded")
@@ -56,9 +71,6 @@ def trainingscore(cur_id, ds_id):
         with open(ts_path, 'r') as f:
             training_set_data = json.load(f)
         current_app.logger.debug("Successfully got training set solutions")
-
-    # Get dataset
-    dataset = Dataset.query.get_or_404(ds_id)
 
     # Check user is allowed to access dataset
     if dataset.curator_id != current_user.id and not current_user.is_admin:
@@ -104,7 +116,7 @@ def trainingscore(cur_id, ds_id):
 
             # Check names match
             names = [x.name for x in art.compounds]
-            if Counter(names) != Counter(training_solution.get("names")):
+            if Counter(map(str.lower, names)) != Counter(map(str.lower, training_solution.get("names"))):
                 current_app.logger.debug("Incorrect Compound Name")
                 errors.append({
                     "artid": art.id,
@@ -369,6 +381,7 @@ def smilesToMolblock():
         current_app.logger.error("Unable to convert SMILES %s to MOLblock",
                                  smiles)
         return jsonify({'success': 0})
+
 
 #####################################################################
 ###                      HELPER FUNCTIONS                         ###
