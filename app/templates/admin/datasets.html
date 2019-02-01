@@ -34,13 +34,11 @@
                 <div class="col-lg-2">
                     {% if dataset.articles|length == 0 %}
                         <em>No Articles</em>
-                    {% elif dataset.training %}
-                        {% if dataset.completed %}
-                            <em><b>Training completed</b><br>
-                                <a href="{{ url_for('data.trainingscore', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
-                                    [SEE REPORT]
-                                </a> 
-                            </em> 
+                    {% elif dataset.completed > 0 %}
+                        {% if dataset.training %}
+                            <td> <em><b>Training completed</b> <a href="{{ url_for('data.trainingscore', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}"> [SEE REPORT]</a> </em> </td>
+                        {% else %}
+                            <td> <em><b>Dataset completed</b></em> </td>
                         {% endif %}
                     {% else %}
                         <a href="{{ url_for('data.dataset', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">

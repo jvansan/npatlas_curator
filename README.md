@@ -73,8 +73,8 @@ mysql -u<DB_USER> -p<DB_PASSWORD> -h<DBSERVER> npatlas_curation < dump.sql
 
 ```
 docker build -t curator:latest -t curator:<VERSION> .
-docker run --name curator -p 5000:5000 --link mysql:dbserver \
--e DBSERVER=dbserver -d curator:latest -v .:/curator
+docker run --name curator -v $(pwd):/curator -p 5000:5000 --link mysql:dbserver \
+-e DBSERVER=dbserver -d curator:latest 
 ```
 
 4) *Nginx Container*
