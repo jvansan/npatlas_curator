@@ -32,7 +32,6 @@ Be careful with this and make backups. This can later be mounted to save data.
 docker volume create mysql-data
 ```
 
-**#TODO** Create script which creates daily backups of database
 
 ```
 docker exec mysql bash -c 'mysqldump -uroot -p$MYSQL_ROOT_PASSWORD --all-databases > /var/dumps/all.sql'
@@ -50,7 +49,16 @@ docker run --name mysql -p 3306:3306 -v mysql-data:/var/lib/mysql \
 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 ```
 
-3) *Flask/uWSGI Container*
+3) *Redis Container*
+
+The "Checker" portion of the curator app requires a Redis messaging queue
+in order to run the Celery tasks. This server can be started by running:
+
+```
+docker run --name redis -p 6379:6379 -d redis
+```
+
+4) *Flask/uWSGI Container*
 
 This container will run the Curator Flask app with a uWSGI server.
 You can set the `DBSERVER` environment variable, or else it will default
@@ -73,11 +81,12 @@ mysql -u<DB_USER> -p<DB_PASSWORD> -h<DBSERVER> npatlas_curation < dump.sql
 
 ```
 docker build -t curator:latest -t curator:<VERSION> .
-docker run --name curator -v $(pwd):/curator -p 5000:5000 --link mysql:dbserver \
--e DBSERVER=dbserver -d curator:latest 
+docker run --name curator -v $(pwd):/curator -p 5000:5000 \
+--link mysql:dbserver --link redis:redis \
+-e DBSERVER=dbserver -e REDIS=redis -d curator:latest 
 ```
 
-4) *Nginx Container*
+5) *Nginx Container*
 
 I have created a simple custom Dockerfile to simplify deployment.
 You can set the `SERVER_NAME` environment variable during build time,
@@ -91,15 +100,11 @@ docker run --name nginx -v /etc/letsencrypt:/etc/letsencrypt \
 --link curator -d -p 80:80 -p 443:443 my-nginx:latest
 ```
 
-5) *Redis Container*
-
-The "Checker" portion of the curator app requires a Redis messaging queue
-in order to run the Celery tasks. This server can be started by running:
-
-```
-docker run --name my-redis -p 6379:6379 -d redis
-```
-
 6) *Celery Container*
 
-Still need to figure this part out!
+```
+docker build -f Dockerfile.celery -t curator-celery:latest .
+docker run --name celery -v $(pwd):/curator --link mysql:dbserver \
+--link redis:redis -e DBSERVER=dbserver -e REDIS=redis \
+-d curator-celery:latest
+```

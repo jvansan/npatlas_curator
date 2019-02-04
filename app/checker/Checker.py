@@ -148,8 +148,19 @@ class Checker(object):
                     self.add_problem(checker_compound.get_article_id(), "name_match",
                                     comp_id=checker_compound.id)
             # Branch 1 - recurated compound
+            # Only check if the structure has changed
             elif checker_compound.npaid:
-                checker_compound.resolve = ResolveEnum.update.value
+                # Check if structure has changed
+                if self.npaid_changed(checker_compound):
+                    if self.compound_full_match(checker_compound):
+                        self.add_problem(checker_compound.get_article_id(), "duplicate",
+                                        comp_id=checker_compound.id)
+                    # Impose strict verification for flat matches
+                    else:
+                        self.add_problem(checker_compound.get_article_id(), "flat_match",
+                                        comp_id=checker_compound.id)
+                else:
+                    checker_compound.resolve = ResolveEnum.update.value
 
         self.check_source_organism(checker_compound)
         commit()
@@ -410,6 +421,20 @@ class Checker(object):
                     .first()
             sess.close()
         return bool(res)
+
+    def npaid_changed(self, compound):
+        """
+        Query NP Atlas DB to see if a compound has changed in 
+        structure
+        Return boolean
+        """
+        sess = self.atlasdb.startSession()
+        res = sess.query(atlasdb.Compound)\
+                .filter_by(id=compound.npaid)\
+                .first()
+        sess.close()
+        match = compound.inchikey != res.inchikey if res else True
+        return match
 
     def npa_artid_from_article_doi(self, article):
         """
