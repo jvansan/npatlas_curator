@@ -159,7 +159,7 @@ function startChecker(datasetId) {
     // Remove complete status if re-running
     startUrl = `/checkerstart/dataset${datasetId}`;
     if ($(`#dataset-${datasetId}-checked`).children('i').attr('class').split(/\s+/).includes("fa-check-circle")) {
-        if (confirm('Restart checker?')) {
+        if (confirm('Re-run checker? Cancel will run checker de novo.')) {
             startUrl = `/checkerstart/dataset${datasetId}?restart=true`;
         }
     }

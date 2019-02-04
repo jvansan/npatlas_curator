@@ -9,8 +9,9 @@ from celery import Celery
 
 # local imports
 from config import app_config
-app_config['CELERY_BROKER_URL'] = 'redis://127.0.0.1:6379/0'
-app_config['CELERY_RESULT_BACKEND'] = 'redis://127.0.0.1:6379/0'
+REDISSERVER = os.environ.get("REDIS", '127.0.0.1')
+app_config['CELERY_BROKER_URL'] = 'redis://{}:6379'.format(REDISSERVER)
+app_config['CELERY_RESULT_BACKEND'] = 'redis://{}:6379'.format(REDISSERVER)
 
 # initialze app variables
 bootstrap = Bootstrap()
