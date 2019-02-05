@@ -254,6 +254,8 @@ def resolve_problem(ds_id, prob_id):
         form = compound_form_factory(article, compound)
         if npa_compounds:
             form.npaid.data = npa_compounds[0].npaid
+        else:
+            form.npaid.data = 0
     else:
         form = simple_problem_form_factory(problem, article)
 
@@ -364,7 +366,8 @@ def get_npa_compounds(compound):
         name_res = sess.query(atlasdb.Name)\
             .filter(atlasdb.Name.name == compound.name)\
             .all()
-        for r in struct_res:
+        for name in name_res:
+            r = name.compounds[0]
             if r.id not in [x.npaid for x in compounds]:
                 compounds.append(
                     NPACompound(r.id, compound.name, r.molblock, r.inchikey)
