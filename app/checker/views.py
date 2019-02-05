@@ -252,7 +252,8 @@ def resolve_problem(ds_id, prob_id):
 
         npa_compounds = get_npa_compounds(compound)
         form = compound_form_factory(article, compound)
-        form.npaid.data = npa_compounds[0].npaid
+        if npa_compounds:
+            form.npaid.data = npa_compounds[0].npaid
     else:
         form = simple_problem_form_factory(problem, article)
 
