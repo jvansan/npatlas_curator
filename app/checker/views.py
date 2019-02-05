@@ -252,10 +252,7 @@ def resolve_problem(ds_id, prob_id):
 
         npa_compounds = get_npa_compounds(compound)
         form = compound_form_factory(article, compound)
-        if npa_compounds:
-            form.npaid.data = npa_compounds[0].npaid
-        else:
-            form.npaid.data = 0
+
     else:
         form = simple_problem_form_factory(problem, article)
 
@@ -338,7 +335,8 @@ def genus_form_factory(compound):
 
 
 def compound_form_factory(article, compound):
-    return CompoundForm(value=compound.id, notes=article.article.notes)
+    return CompoundForm(value=compound.id, notes=article.article.notes,
+                        npaid=compound.npaid)
 
 
 class NPACompound(object):
