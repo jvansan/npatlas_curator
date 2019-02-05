@@ -353,13 +353,21 @@ class NPACompound(object):
 def get_npa_compounds(compound):
     compounds = []
     sess = atlasdb.startSession()
+    if compound.npaid:
+        res = sess.query(atlasdb.Compound)\
+                .filter(atlasdb.Compound.id == compound.npaid)\
+                .first()
+        compounds.append(
+            NPACompound(res.id, res.names[0].name, res.molblock, res.inchikey)
+        )
     struct_res = sess.query(atlasdb.Compound)\
         .filter(atlasdb.Compound.inchikey.startswith(compound.inchikey.split('-')[0]))\
         .all()
     for r in struct_res:
-        compounds.append(
-            NPACompound(r.id, r.names[0].name, r.molblock, r.inchikey)
-        )
+        if r.id not in [x.npaid for x in compounds]:
+            compounds.append(
+                NPACompound(r.id, r.names[0].name, r.molblock, r.inchikey)
+            )
     if compound.name != "Not named":
         name_res = sess.query(atlasdb.Name)\
             .filter(atlasdb.Name.name == compound.name)\
