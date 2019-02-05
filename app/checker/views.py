@@ -252,8 +252,7 @@ def resolve_problem(ds_id, prob_id):
 
         npa_compounds = get_npa_compounds(compound)
         form = compound_form_factory(article, compound)
-        if npa_compounds:
-            form.npaid.data = npa_compounds[0].npaid
+
     else:
         form = simple_problem_form_factory(problem, article)
 
@@ -336,7 +335,8 @@ def genus_form_factory(compound):
 
 
 def compound_form_factory(article, compound):
-    return CompoundForm(value=compound.id, notes=article.article.notes)
+    return CompoundForm(value=compound.id, notes=article.article.notes,
+                        npaid=compound.npaid)
 
 
 class NPACompound(object):
@@ -353,18 +353,27 @@ class NPACompound(object):
 def get_npa_compounds(compound):
     compounds = []
     sess = atlasdb.startSession()
+    if compound.npaid:
+        res = sess.query(atlasdb.Compound)\
+                .filter(atlasdb.Compound.id == compound.npaid)\
+                .first()
+        compounds.append(
+            NPACompound(res.id, res.names[0].name, res.molblock, res.inchikey)
+        )
     struct_res = sess.query(atlasdb.Compound)\
         .filter(atlasdb.Compound.inchikey.startswith(compound.inchikey.split('-')[0]))\
         .all()
     for r in struct_res:
-        compounds.append(
-            NPACompound(r.id, r.names[0].name, r.molblock, r.inchikey)
-        )
+        if r.id not in [x.npaid for x in compounds]:
+            compounds.append(
+                NPACompound(r.id, r.names[0].name, r.molblock, r.inchikey)
+            )
     if compound.name != "Not named":
         name_res = sess.query(atlasdb.Name)\
             .filter(atlasdb.Name.name == compound.name)\
             .all()
-        for r in struct_res:
+        for name in name_res:
+            r = name.compounds[0]
             if r.id not in [x.npaid for x in compounds]:
                 compounds.append(
                     NPACompound(r.id, compound.name, r.molblock, r.inchikey)

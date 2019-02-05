@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import (BooleanField, HiddenField, IntegerField, RadioField,
                      SelectField, StringField, SubmitField)
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Optional
 
 from .validators import NpaIdValidator, SimpleValidator, TypeSelectValidator
 
@@ -67,5 +67,5 @@ class CompoundForm(ResolveBaseForm):
     value = HiddenField('')
     select = SelectField("Select Option:", choices=COMPOUND_OPTIONS, 
                         validators=[DataRequired()], id="compoundSelect")
-    npaid = IntegerField("Replace NPA ID:", validators=[NpaIdValidator()])
+    npaid = IntegerField("Replace NPA ID:", validators=[Optional()])
     notes = StringField("Notes:")
