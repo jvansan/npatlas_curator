@@ -14,11 +14,16 @@ from ..utils.atlasdb import atlasdb
 from .Checker import Checker
 from .forms import (CompoundForm, GenusForm, JournalForm, SimpleIntForm,
                     SimpleStringForm)
+from .Inserter import Inserter
 from .ResolveEnum import ResolveEnum
 
 
 logger = get_task_logger(__name__)
 
+
+#####################################################################
+###                      CELERY TASKS                             ###
+#####################################################################
 
 @celery.task(bind=True)
 def start_checker_task(self, dataset_id, standardize_compounds=False,
@@ -39,6 +44,70 @@ def standardize_dataset(ds_id):
         dataset.checker_dataset.standardized = False
     db.session.commit()
     run_standardization(ds_id)
+
+
+@celery.task(bind=True)
+def insert_dataset(self, dataset_id):
+    inserter = Inserter(dataset_id, celery_task=self, logger=logger)
+    inserter.run()
+
+    result = "DATA INSERTED"
+
+    return {'current': 100, 'total': 100, 'status': 'Task completed!', 
+            'result': result}
+
+
+#####################################################################
+###                      FLASK VIEWS                              ###
+#####################################################################
+
+@checker.route('/insert/dataset<int:dataset_id>', methods=['POST'])
+@login_required
+@require_admin
+def start_insert_dataset(dataset_id):
+    task = insert_dataset.delay(dataset_id=dataset_id)
+
+    return jsonify({'task_id': task.id}), 202
+
+
+@checker.route('/insertstatus')
+@login_required
+@require_admin
+def inserterstatus():
+    task_id = request.args.get('taskid')
+    task = insert_dataset.AsyncResult(task_id)
+
+    if task.state == 'PENDING':
+        current_app.logger.debug('PENDING...')
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        current_app.logger.debug("{}: {}/{} - {}"\
+        .format(task.state, task.info.get('current',0), 
+                task.info.get('total',1), 
+                task.info.get('status', 'Failed')))
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', 'Failed...')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info)
+        }
+
+
+    return jsonify(response)
 
 
 @checker.route('/standardize/dataset<int:dataset_id>', methods=['POST'])
@@ -166,7 +235,8 @@ def checkerrunning():
             'complete': False,
             'task_id': dataset.checker_task_id()
         }
-    elif not dataset.standard_running() and not dataset.checker_completed():
+    elif (not dataset.standard_running() and not dataset.checker_completed()
+        and not dataset.inserted()):
         response = {
             'standard': False,
             'running': False,
@@ -191,8 +261,10 @@ def checkerrunning():
 @require_admin
 def problem_list(ds_id):
     problems = Problem.query.filter_by(dataset_id=ds_id).all()
+    ds = Dataset.query.get_or_404(ds_id)
+    ds.inserted()
     return render_template('checker/problems.html', ds_id=ds_id,
-        problems=problems)
+        problems=problems, inserted=inserted)
 
 
 @checker.route('/_search_journal')
@@ -358,7 +430,7 @@ def get_npa_compounds(compound):
                 .filter(atlasdb.Compound.id == compound.npaid)\
                 .first()
         compounds.append(
-            NPACompound(res.id, res.names[0].name, res.molblock, res.inchikey)
+            NPACompound(res.id, res.original_name.name, res.molblock, res.inchikey)
         )
     struct_res = sess.query(atlasdb.Compound)\
         .filter(atlasdb.Compound.inchikey.startswith(compound.inchikey.split('-')[0]))\
@@ -366,17 +438,17 @@ def get_npa_compounds(compound):
     for r in struct_res:
         if r.id not in [x.npaid for x in compounds]:
             compounds.append(
-                NPACompound(r.id, r.names[0].name, r.molblock, r.inchikey)
+                NPACompound(r.id, r.original_name.name, r.molblock, r.inchikey)
             )
     if compound.name != "Not named":
-        name_res = sess.query(atlasdb.Name)\
-            .filter(atlasdb.Name.name == compound.name)\
+        name_res = sess.query(atlasdb.CompoundName)\
+            .filter(atlasdb.CompoundName.name.has(name=compound.name))\
             .all()
-        for name in name_res:
-            r = name.compounds[0]
+        for cn in name_res:
+            r = cn.compound
             if r.id not in [x.npaid for x in compounds]:
                 compounds.append(
-                    NPACompound(r.id, compound.name, r.molblock, r.inchikey)
+                    NPACompound(r.id, cn.name.name, r.molblock, r.inchikey)
                 )
     sess.close()
     return compounds

@@ -15,3 +15,5 @@ curator_env/
 
 # Self signed certs for test deployment
 certs/
+# Insertion logs
+insert_logs/

@@ -130,6 +130,9 @@ class Dataset(db.Model):
         """
         return self.checker_dataset.celery_task_id if self.checker_dataset else None
 
+    def inserted(self):
+        return self.checker_dataset.inserted if self.checker_dataset else False
+
 
 class Article(db.Model):
     """

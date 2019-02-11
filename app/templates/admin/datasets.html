@@ -37,8 +37,13 @@
                     {% elif dataset.completed > 0 %}
                         {% if dataset.training %}
                             <td> <em><b>Training completed</b> <a href="{{ url_for('data.trainingscore', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}"> [SEE REPORT]</a> </em> </td>
+                        {% elif dataset.inserted() %}
+                            <td> <em><b>Dataset Inserted!</b></em>
                         {% else %}
-                            <td> <em><b>Dataset completed</b></em> </td>
+                            <td> <a href="{{ url_for('data.dataset', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
+                                    <b>Dataset completed</b>
+                                </a> 
+                            </td>
                         {% endif %}
                     {% else %}
                         <a href="{{ url_for('data.dataset', cur_id=dataset.get_curator_id(), ds_id=dataset.id) }}">
@@ -52,7 +57,9 @@
                 <div class="col-lg-2">
                     <!-- Hidden input for keeping dataset id -->
                     <input id="dataset-id-{{ dataset.id }}" class="dataset-id" type="hidden" style="display: none" value="{{ dataset.id }}">
-                    {% if dataset.completed and not dataset.checker_dataset.standardized and not dataset.training %}
+                    {% if dataset.checker_dataset.inserted %}
+                        <b>Dataset Inserted!</b>
+                    {% elif dataset.completed and not dataset.checker_dataset.standardized and not dataset.training %}
                     <button type="button" class="btn btn-info" class="dataset-checker-button" id="dataset-checker-button-{{ dataset.id }}"
                             onclick="startStandardization({{dataset.id}})">
                         Run Standardization

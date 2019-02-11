@@ -1,6 +1,5 @@
 import logging
 import re
-import time
 
 from .. import db
 from ..models import (CheckerArticle, CheckerCompound, CheckerDataset, Dataset,
@@ -21,6 +20,7 @@ class Checker(object):
         import warnings
         sys.path.append("../..")
         from instance.config import ATLAS_DATABASE_URI
+        # suppress annoying MariaDB version warning
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             atlasdb.dbInit(ATLAS_DATABASE_URI)
@@ -42,9 +42,8 @@ class Checker(object):
                 meta={'current': current, 'total': total,
                     'status': status}
             )
-        else:
-            logger.info("PROGRESS: {}/{}\nStatus: {}"\
-                  .format(current, total, status))
+        self.logger.info("PROGRESS: {}/{}\nStatus: {}"\
+                .format(current, total, status))
 
     def run(self, standardize_compounds=False, restart=False):
         self.logger.info("Setting up dataset")

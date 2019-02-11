@@ -83,6 +83,7 @@ mysql -u<DB_USER> -p<DB_PASSWORD> -h<DBSERVER> npatlas_curation < dump.sql
 docker build -t curator:latest -t curator:<VERSION> .
 docker run --name curator -v $(pwd):/curator -p 5000:5000 \
 --link mysql:dbserver --link redis:redis \
+--log-opt max-size=5m --log-opt max-file=10 \
 -e DBSERVER=dbserver -e REDIS=redis -d curator:latest 
 ```
 
@@ -106,5 +107,6 @@ docker run --name nginx -v /etc/letsencrypt:/etc/letsencrypt \
 docker build -f Dockerfile.celery -t curator-celery:latest .
 docker run --name celery -v $(pwd):/curator --link mysql:dbserver \
 --link redis:redis -e DBSERVER=dbserver -e REDIS=redis \
+--log-opt max-size=5m --log-opt max-file=10 \
 -d curator-celery:latest
 ```

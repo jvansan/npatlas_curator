@@ -12,7 +12,7 @@ class DevelopmentConfig(Config):
     Development configurations
     """
 
-    SQLALCHEMY_ECHO = True
+    # SQLALCHEMY_ECHO = True
     # LOGIN_DISABLED=True
 
 

@@ -58,10 +58,19 @@
             <h3 class="text-center">
                 No problems for this dataset!
             </h3>
+            <hr class="intro-divider">
+            <h3 class="text-center">
+                Insert Data?
+            </h3>
+            <div class="row" style="justify-content: center">
+                <button class="btn btn-success" id="dataset-insert-button" role="button" onclick="startInserter( {{ ds_id }} )">
+                    Insert
+                </button>
+            </div>
         </div>
     {% endif %}
 </section>
-
+<script src="{{ url_for('static', filename='js/problems.js') }}"></script>
 <script>
 function startChecker(datasetId) {
     $.post(`/checkerstart/dataset${datasetId}?restart=true`, {})
