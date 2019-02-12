@@ -186,14 +186,14 @@ function startStandardization(datasetId) {
 
 
 function markComplete(idString) {
-    statusObject = $(idString).children("i");
+    let statusObject = $(idString).children("i");
     statusObject.removeClass("fa-times-circle").removeClass("red");
     statusObject.removeClass("fa-clock").removeClass("yellow");
     statusObject.addClass("fa-check-circle").addClass("green");
 }
 
 function markIncomplete(idString) {
-    statusObject = $(idString).children("i");
+    let statusObject = $(idString).children("i");
     statusObject.removeClass("fa-check-circle").removeClass("green");
     statusObject.addClass("fa-times-circle").addClass("red");
 }
@@ -212,7 +212,7 @@ async function main() {
         console.log('Complete Datasets: [' + completeDatasets.join(', ') + ']');
 
         for (var idv of completeDatasets) {
-            resolveUrl = `/admin/resolve/dataset${idv}`;
+            let resolveUrl = `/admin/resolve/dataset${idv}`;
             completeDataset(idv, resolveUrl);
         }
 

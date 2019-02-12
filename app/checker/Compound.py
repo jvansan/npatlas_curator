@@ -4,7 +4,7 @@
 import copy
 import logging
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, Descriptors, SaltRemover
+from rdkit.Chem import rdMolDescriptors, rdDepictor, Descriptors, SaltRemover
 from rdkit.Chem.AllChem import ReplaceSubstructs
 # Silence RDKit Warning
 from rdkit import rdBase
@@ -77,6 +77,7 @@ class Compound(object):
         self.m_plus_na = round(self.accurate_mass + calculate_exact_mass('[Na+]'), 4)
         # Set name in molblock
         self.rdmol.SetProp('_Name', self.name)
+        rdDepictor.Compute2DCoords(self.rdmol)
         self.molblock = Chem.MolToMolBlock(self.rdmol)
         self.formula = rdMolDescriptors.CalcMolFormula(self.rdmol)
 
@@ -203,3 +204,7 @@ def calculate_exact_mass(smiles):
 @exit_after(5)
 def standardize_smiles_wrapper(smiles):
     return get_standardized_smiles(smiles)
+
+def inchikey_from_smiles(smiles):
+    m = Chem.MolFromSmiles(smiles)
+    return Chem.MolToInchiKey(m)

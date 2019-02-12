@@ -14,11 +14,16 @@ from ..utils.atlasdb import atlasdb
 from .Checker import Checker
 from .forms import (CompoundForm, GenusForm, JournalForm, SimpleIntForm,
                     SimpleStringForm)
+from .Inserter import Inserter
 from .ResolveEnum import ResolveEnum
 
 
 logger = get_task_logger(__name__)
 
+
+#####################################################################
+###                      CELERY TASKS                             ###
+#####################################################################
 
 @celery.task(bind=True)
 def start_checker_task(self, dataset_id, standardize_compounds=False,
@@ -39,6 +44,70 @@ def standardize_dataset(ds_id):
         dataset.checker_dataset.standardized = False
     db.session.commit()
     run_standardization(ds_id)
+
+
+@celery.task(bind=True)
+def insert_dataset(self, dataset_id):
+    inserter = Inserter(dataset_id, celery_task=self, logger=logger)
+    inserter.run()
+
+    result = "DATA INSERTED"
+
+    return {'current': 100, 'total': 100, 'status': 'Task completed!', 
+            'result': result}
+
+
+#####################################################################
+###                      FLASK VIEWS                              ###
+#####################################################################
+
+@checker.route('/insert/dataset<int:dataset_id>', methods=['POST'])
+@login_required
+@require_admin
+def start_insert_dataset(dataset_id):
+    task = insert_dataset.delay(dataset_id=dataset_id)
+
+    return jsonify({'task_id': task.id}), 202
+
+
+@checker.route('/insertstatus')
+@login_required
+@require_admin
+def inserterstatus():
+    task_id = request.args.get('taskid')
+    task = insert_dataset.AsyncResult(task_id)
+
+    if task.state == 'PENDING':
+        current_app.logger.debug('PENDING...')
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        current_app.logger.debug("{}: {}/{} - {}"\
+        .format(task.state, task.info.get('current',0), 
+                task.info.get('total',1), 
+                task.info.get('status', 'Failed')))
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', 'Failed...')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info)
+        }
+
+
+    return jsonify(response)
 
 
 @checker.route('/standardize/dataset<int:dataset_id>', methods=['POST'])
@@ -166,7 +235,8 @@ def checkerrunning():
             'complete': False,
             'task_id': dataset.checker_task_id()
         }
-    elif not dataset.standard_running() and not dataset.checker_completed():
+    elif (not dataset.standard_running() and not dataset.checker_completed()
+        or dataset.inserted()):
         response = {
             'standard': False,
             'running': False,
@@ -191,8 +261,10 @@ def checkerrunning():
 @require_admin
 def problem_list(ds_id):
     problems = Problem.query.filter_by(dataset_id=ds_id).all()
+    ds = Dataset.query.get_or_404(ds_id)
+    inserted=ds.inserted()
     return render_template('checker/problems.html', ds_id=ds_id,
-        problems=problems)
+        problems=problems, inserted=inserted)
 
 
 @checker.route('/_search_journal')
@@ -230,6 +302,9 @@ def resolve_problem(ds_id, prob_id):
     # Get all the necessary data from the database
     problem = Problem.query.get_or_404(prob_id)
     article = CheckerArticle.query.get_or_404(problem.article_id)
+    dataset = Dataset.query.get_or_404(ds_id)
+    cur_id = problem.dataset.curator.id
+
     if problem.compound_id:
         compound = CheckerCompound.query.get_or_404(problem.compound_id)
     else:
@@ -238,6 +313,15 @@ def resolve_problem(ds_id, prob_id):
     # Make sure problem is associated with this dataset
     if problem.dataset_id != ds_id:
         abort(404)
+
+    # Get next problem for redirection
+    current_problem_idx = dataset.problems.index(problem)
+    next_problem_idx = current_problem_idx + 1
+    if next_problem_idx == len(dataset.problems):
+        next_problem_id = None
+    else:
+        next_problem_id = dataset.problems[next_problem_idx].id
+    
     form = None
     npa_compounds = None
     if problem.problem == "journal":
@@ -252,6 +336,8 @@ def resolve_problem(ds_id, prob_id):
 
         npa_compounds = get_npa_compounds(compound)
         form = compound_form_factory(article, compound)
+        if compound.npaid:
+            form.select.default=1
 
     else:
         form = simple_problem_form_factory(problem, article)
@@ -264,16 +350,38 @@ def resolve_problem(ds_id, prob_id):
             problem.resolved = True
             commit()
         else:
+            if force:
+                article.resolved = True
+
+            # This ensures that a replacement of an NPAID doesn't leave another
+            # NPAID with a matching InchiKey
+            if form.__class__.__name__ == "CompoundForm":
+                if form.select.data == "replace":
+                    npa_match = [x for x in npa_compounds if x.npaid == form.npaid.data][0]
+                    if npa_match.inchikey != compound.inchikey:
+                        flash("You can't select that NPAID to replace!", category='danger')
+                        flash_errors(form)
+                        return render_template('checker/resolve.html', ds_id=ds_id,
+                           problem=problem, article=article, form=form,
+                           compound=compound, cur_id=cur_id,
+                           npa_compounds=npa_compounds)
+                    # except:
+                    #     flash("Unknown error...")
+                    #     # abort(500)
+
             save_resolve_data(form, article, compound)
             problem.resolved = True
             commit()
 
-        return redirect(url_for('checker.problem_list', ds_id=ds_id))
+        if next_problem_id:
+            return redirect(url_for('checker.resolve_problem', ds_id=ds_id,
+                            prob_id=next_problem_id))
+        else:
+            return redirect(url_for('checker.problem_list', ds_id=ds_id))
     
     else:
         flash_errors(form)
 
-    cur_id = problem.dataset.curator.id
     return render_template('checker/resolve.html', ds_id=ds_id,
                            problem=problem, article=article, form=form,
                            compound=compound, cur_id=cur_id,
@@ -358,7 +466,7 @@ def get_npa_compounds(compound):
                 .filter(atlasdb.Compound.id == compound.npaid)\
                 .first()
         compounds.append(
-            NPACompound(res.id, res.names[0].name, res.molblock, res.inchikey)
+            NPACompound(res.id, res.original_name.name, res.molblock, res.inchikey)
         )
     struct_res = sess.query(atlasdb.Compound)\
         .filter(atlasdb.Compound.inchikey.startswith(compound.inchikey.split('-')[0]))\
@@ -366,17 +474,17 @@ def get_npa_compounds(compound):
     for r in struct_res:
         if r.id not in [x.npaid for x in compounds]:
             compounds.append(
-                NPACompound(r.id, r.names[0].name, r.molblock, r.inchikey)
+                NPACompound(r.id, r.original_name.name, r.molblock, r.inchikey)
             )
     if compound.name != "Not named":
-        name_res = sess.query(atlasdb.Name)\
-            .filter(atlasdb.Name.name == compound.name)\
+        name_res = sess.query(atlasdb.CompoundName)\
+            .filter(atlasdb.CompoundName.name.has(name=compound.name))\
             .all()
-        for name in name_res:
-            r = name.compounds[0]
+        for cn in name_res:
+            r = cn.compound
             if r.id not in [x.npaid for x in compounds]:
                 compounds.append(
-                    NPACompound(r.id, compound.name, r.molblock, r.inchikey)
+                    NPACompound(r.id, cn.name.name, r.molblock, r.inchikey)
                 )
     sess.close()
     return compounds

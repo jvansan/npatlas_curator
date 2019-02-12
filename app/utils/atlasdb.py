@@ -1,30 +1,20 @@
 # -*- coding: utf-8 -*-
 """ORM Connection to MySQL DB
 """
-from sqlalchemy import create_engine
-# from sqlalchemy.ext.automap import automap_base
+import logging
+from sqlalchemy import (Column, ForeignKey, Integer, Numeric, String, Table,
+                        create_engine, func, select)
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (Table, func, Column, Integer, Numeric, String,
-                        ForeignKey)
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import backref, relationship, sessionmaker, object_session
 from sqlalchemy.types import CHAR, TIMESTAMP, Text
-from sqlalchemy.orm import sessionmaker, relationship
-# from sqlalchemy.schema import CreateTable
 
 
 Base = declarative_base()
 
 
 # Many-to-Many Relation Tables
-compound_name = Table('compound_has_compound_name', Base.metadata,
-                      Column('compound_name_compound_name_id', Integer,
-                             ForeignKey('compound_name.compound_name_id'),
-                             primary_key=True),
-                      Column('compound_compound_id', Integer,
-                             ForeignKey('compound.compound_id'),
-                             primary_key=True),
-                      mysql_engine='InnoDB',
-                      mysql_charset='utf8')
-
 compound_reassignment = Table('compound_has_reassignment', Base.metadata,
                               Column('compound_compound_id', Integer,
                                      ForeignKey('compound.compound_id'),
@@ -35,30 +25,14 @@ compound_reassignment = Table('compound_has_reassignment', Base.metadata,
                               Column('reassignment_type_reassignment_type_id',
                                      Integer,
                                      ForeignKey('origin.origin_id'),
-                                     primary_key=True),
-                              mysql_engine='InnoDB',
-                              mysql_charset='utf8'
+                                     primary_key=True)
                               )
-
-# compound_synthesis = Table('compound_has_synthesis', Base.metadata,
-#                            Column('compound_compound_id', Integer,
-#                                   ForeignKey('compound.compound_id'),
-#                                   primary_key=True),
-#                            Column('reference_reference_id', Integer,
-#                                   ForeignKey('reference.reference_id'),
-#                                   primary_key=True),
-#                            Column('synthesis_synthesis_id', Integer,
-#                                   ForeignKey('synthesis.synthesis_id'),
-#                                   primary_key=True),
-#                            mysql_engine='InnoDB',
-#                            mysql_charset='utf8'
-#                            )
 
 
 # CompoundOrigin Association Object
 class CompoundOrigin(Base):
     __tablename__ = 'compound_has_origin'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
+    # __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     compound_id = Column('compound_compound_id', Integer,
                          ForeignKey('compound.compound_id'),
                          primary_key=True)
@@ -69,10 +43,27 @@ class CompoundOrigin(Base):
                           ForeignKey('reference.reference_id'),
                           primary_key=True)
     original_isolation_reference = Column(Integer, default=1)
+    # Relationships
+    compound = relationship("Compound", backref="compound_origin")
+    origin = relationship("Origin")
+    reference = relationship("Reference")
 
+    @hybrid_property
+    def origin_reference(self):
+        return (self.origin, self.reference)
+
+    @origin_reference.setter
+    def origin_reference(self, orig_ref_tuple):
+        assert len(orig_ref_tuple) == 2
+        assert isinstance(orig_ref_tuple[0], Origin)
+        assert isinstance(orig_ref_tuple[1], Reference)
+        self.origin = orig_ref_tuple[0]
+        self.reference = orig_ref_tuple[1]
+
+
+# CompoundSynthesis Association Object
 class CompoundSynthesis(Base):
     __tablename__ = "compound_has_synthesis"
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     compound_id = Column('compound_compound_id', Integer,
                          ForeignKey('compound.compound_id'),
                          primary_key=True)
@@ -82,19 +73,66 @@ class CompoundSynthesis(Base):
     reference_id = Column('reference_reference_id', Integer,
                           ForeignKey('reference.reference_id'),
                           primary_key=True)
+    # Relationships
+    compound = relationship("Compound", backref="compound_synthesis")
+    synthesis = relationship("Synthesis")
+    reference = relationship("Reference")
+
+    @hybrid_property
+    def synthesis_reference(self):
+        return (self.synthesis, self.reference)
+
+    @synthesis_reference.setter
+    def synthesis_reference(self, synth_ref_tuple):
+        assert len(synth_ref_tuple) == 2
+        assert isinstance(synth_ref_tuple[0], Synthesis)
+        assert isinstance(synth_ref_tuple[1], Reference)
+        self.synthesis = synth_ref_tuple[0]
+        self.reference = synth_ref_tuple[1]
+
+
+# CompoundName Association Object
+class CompoundName(Base):
+    __tablename__ = 'compound_has_compound_name'
+    compound_id = Column('compound_compound_id', Integer,
+                         ForeignKey('compound.compound_id'),
+                         primary_key=True)
+    name_id = Column('compound_name_compound_name_id', Integer,
+                     ForeignKey('compound_name.compound_name_id'),
+                     primary_key=True)
+    reference_id = Column('reference_reference_id', Integer,
+                          ForeignKey('reference.reference_id'),
+                          primary_key=True)
+    original_isolation_name = Column(Integer, default=1)
+
+    # Relationships
+    compound = relationship("Compound", backref="compound_name")
+    name = relationship("Name")
+    reference = relationship("Reference")
+    
+    @hybrid_property
+    def name_reference(self):
+        return (self.name, self.reference)
+
+    @name_reference.setter
+    def name_reference(self, name_ref_tuple):
+        assert len(name_ref_tuple) == 2
+        assert isinstance(name_ref_tuple[0], Name)
+        assert isinstance(name_ref_tuple[1], Reference)
+        self.name = name_ref_tuple[0]
+        self.reference = name_ref_tuple[1]
 
 
 # Compound Information Section
 class Compound(Base):
     __tablename__ = 'compound'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('compound_id', Integer, primary_key=True)
     insert_date = Column(
         'compound_insert_date', TIMESTAMP, nullable=False,
         default=func.current_timestamp())
     inchikey = Column('compound_inchikey', CHAR(27), nullable=False,
                       unique=True)
-    inchi = Column('compound_inchi', String(2000), nullable=False)
+    inchi = Column('compound_inchi', String(4000), nullable=False)
     molecular_formula = Column('compound_molecular_formula', String(255))
     molecular_weight = Column('compound_molecular_weight', Numeric(9, 4))
     accurate_mass = Column('compound_accurate_mass', Numeric(9, 4))
@@ -104,30 +142,58 @@ class Compound(Base):
     molblock = Column('compound_molblock', Text)
     cluster_id = Column('compound_cluster_id', Integer)
     node_id = Column('compound_node_id', Integer)
-    names = relationship('Name', secondary=compound_name,
-                         back_populates='compounds',
-                         lazy="joined")
-    curation_data = relationship('CurationData')
+    # Simple relationships
+    curation_data = relationship('CurationData', uselist=False)
     db_ids = relationship('ExternalDB')
-    # origin = relationship('Origin', secondary='compound_has_origin',
-    #                       back_populates='compounds')
-    # references = relationship('Reference', secondary='compound_has_origin',
-    #                           back_populates='compounds')
+    # Complex Associations
+    # These get associations with references attached as tuple
+    names = association_proxy('compound_name', 'name_reference')
+    syntheses = association_proxy('compound_synthesis', 'synthesis_reference')
+    origins = association_proxy('compound_origin', 'origin_reference')
 
     def __repr__(self):
         return "<Compound(inchikey='%s')>" % self.inchikey
 
+    @hybrid_property
+    def original_origin_reference(self):
+        co = object_session(self).query(CompoundOrigin)\
+            .filter(CompoundOrigin.compound_id==self.id)\
+            .filter(CompoundOrigin.original_isolation_reference==1)\
+            .one()
+        return co.origin_reference
+
+    @hybrid_property
+    def original_origin(self):
+        co = object_session(self).query(CompoundOrigin)\
+            .filter(CompoundOrigin.compound_id==self.id)\
+            .filter(CompoundOrigin.original_isolation_reference==1)\
+            .one()
+        return co.origin
+
+    @hybrid_property
+    def original_name_reference(self):
+        cn = object_session(self).query(CompoundName)\
+            .filter(CompoundName.compound_id==self.id)\
+            .filter(CompoundName.original_isolation_name==1)\
+            .one()
+        return cn.name_reference
+
+    @hybrid_property
+    def original_name(self):
+        cn = object_session(self).query(CompoundName)\
+            .filter(CompoundName.compound_id==self.id)\
+            .filter(CompoundName.original_isolation_name==1)\
+            .one()
+        return cn.name
+
 
 class Name(Base):
     __tablename__ = 'compound_name'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('compound_name_id', Integer, primary_key=True)
     insert_date = Column('compound_name_insert_date', TIMESTAMP,
                          nullable=False,
                          default=func.current_timestamp())
     name = Column('compound_name_name', String(2000), nullable=False)
-    compounds = relationship('Compound', secondary=compound_name,
-                             back_populates='names')
 
     def __repr__(self):
         return "<Name(name='%s')>" % self.name
@@ -135,7 +201,6 @@ class Name(Base):
 
 class CurationData(Base):
     __tablename__ = 'curation_data'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('curation_data_id', Integer, primary_key=True)
     insert_date = Column('curation_data_insert_date', TIMESTAMP,
                          nullable=False,
@@ -147,7 +212,6 @@ class CurationData(Base):
 
 class ExternalDB(Base):
     __tablename__ = 'compound_external_db'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     compound_id = Column('compound_compound_id', Integer,
                          ForeignKey('compound.compound_id'), primary_key=True)
     db_id = Column('compound_external_db_id', Integer,
@@ -161,7 +225,6 @@ class ExternalDB(Base):
 
 class ExternalDBID(Base):
     __tablename__ = 'compound_external_db_id'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('compound_external_db_id', Integer, primary_key=True)
     name = Column('compound_external_db_name', String(45))
 
@@ -169,7 +232,6 @@ class ExternalDBID(Base):
 # Origin Data Section
 class Origin(Base):
     __tablename__ = 'origin'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('origin_id', Integer, primary_key=True)
     insert_date = Column(
         'origin_insert_date', TIMESTAMP, nullable=False,
@@ -177,15 +239,11 @@ class Origin(Base):
     genus_id = Column('genus_genus_id', Integer, ForeignKey('genus.genus_id'),
                       nullable=False)
     species = Column('origin_species', String(255), nullable=False)
-    # compounds = relationship('Compound', secondary='compound_has_origin',
-    #                          back_populates='origin')
-    # reference = relationship('Reference', secondary='compound_has_origin')
     genus = relationship('Genus')
 
 
 class Genus(Base):
     __tablename__ = 'genus'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('genus_id', Integer, primary_key=True)
     name = Column('genus_genus', String(255), nullable=False)
     origin_type_id = Column('origin_type_origin_type_id', Integer,
@@ -197,7 +255,6 @@ class Genus(Base):
 
 class OriginType(Base):
     __tablename__ = 'origin_type'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('origin_type_id', Integer, primary_key=True)
     name = Column('origin_type_type', String(255), nullable=False)
     genera = relationship('Genus', back_populates='origin_type')
@@ -206,7 +263,6 @@ class OriginType(Base):
 # Reference Data Section
 class Reference(Base):
     __tablename__ = 'reference'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('reference_id', Integer, primary_key=True)
     insert_date = Column(
         'reference_insert_date', TIMESTAMP, nullable=False,
@@ -227,20 +283,19 @@ class Reference(Base):
                                nullable=False)
     reference_type = relationship('ReferenceType')
     abstract = Column('reference_abstract', Text)
+    patent_number = Column('reference_patent_number', String(200))
     # compounds = relationship('Compound', secondary='compound_has_origin',
                              # back_populates='references')
 
 
 class ReferenceType(Base):
     __tablename__ = 'reference_type'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('reference_type_id', Integer, primary_key=True)
     name = Column('reference_type_name', String(45), nullable=False)
 
 
 class Journal(Base):
     __tablename__ = 'journal'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('journal_id', Integer, primary_key=True)
     title = Column('journal_title', String(255), nullable=False)
     abbrev = relationship('JournalAbbreviation', back_populates='journal')
@@ -248,17 +303,15 @@ class Journal(Base):
 
 class JournalAbbreviation(Base):
     __tablename__ = 'journal_abbreviation'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('journal_journal_id', Integer,
                 ForeignKey('journal.journal_id'), primary_key=True)
-    abbrev = Column('journal_abbreviation', String(45), nullable=False)
+    abbrev = Column('journal_abbreviation', String(100), nullable=False)
     journal = relationship('Journal', back_populates='abbrev')
 
 
 # Synthesis Data Section
 class Synthesis(Base):
     __tablename__ = 'synthesis'
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
     id = Column('synthesis_id', Integer, primary_key=True)
     description = Column('synthesis_description', String(2000))
 
@@ -288,6 +341,7 @@ class AtlasDB(object):
     Synthesis = Synthesis
     CompoundOrigin = CompoundOrigin
     CompoundSynthesis = CompoundSynthesis
+    CompoundName = CompoundName
 
     def dbInit(self, conn_string):
         """Initialize DB to a given connection
@@ -334,10 +388,6 @@ class AtlasDB(object):
         """
         return tablename.__table__.columns.keys()
 
-    def collectPassedCompounds(self, sess):
-        return sess.query(self.Compound.inchikey,
-                          self.Compound.smiles).all()
-
     def initPrepopulated(self, sess):
         """Add prepoulated information if not present
         """
@@ -351,7 +401,8 @@ class AtlasDB(object):
             chemspider = self.ExternalDBID(name='ChemSpider')
             chembl = self.ExternalDBID(name='ChEMBL')
             berdy = self.ExternalDBID(name='Berdy')
-            sess.add_all([pubchem, chemspider, chembl, berdy])
+            mibig = self.ExternalDBID(name='MIBiG')
+            sess.add_all([pubchem, chemspider, chembl, berdy, mibig])
             if not sess.autocommit:
                 sess.commit()
 
@@ -365,9 +416,9 @@ class AtlasDB(object):
 
     def _addRefTypes(self, sess):
         if not sess.query(self.ReferenceType).first():
-            print_ = self.ReferenceType(name='Print')
-            online = self.ReferenceType(name='Online')
-            sess.add_all([print_, online])
+            journal = self.ReferenceType(name='Journal Article')
+            patent = self.ReferenceType(name='Patent')
+            sess.add_all([journal, patent])
             if not sess.autocommit:
                 sess.commit()
 
@@ -377,13 +428,12 @@ class AtlasDB(object):
                         (self.Genus.origin_type_id == origin_type_id))\
                 .first()
         if not genus:
+            logging.warn("Adding a new Genus the the DB.")
             genus = self.Genus(
                     name=genus_name,
                     origin_type_id=origin_type_id
                     )
             sess.add(genus)
-            if not sess.autocommit:
-                sess.commit()
         return genus
 
     def getJournal(self, title, abbrev, sess):
@@ -391,15 +441,13 @@ class AtlasDB(object):
                 .filter(self.Journal.title == title)\
                 .first()
         if not journal:
+            logging.warn("Adding a new Journal the the DB.")
             journal = self.Journal(
                     title=title,
                     abbrev=[self.JournalAbbreviation(abbrev=abbrev)])
             sess.add(journal)
-            if not sess.autocommit:
-                sess.commit()
         return journal
 
-    
 
 # Instance of Atlas DB to pass around
 atlasdb = AtlasDB()

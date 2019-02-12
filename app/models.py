@@ -130,6 +130,9 @@ class Dataset(db.Model):
         """
         return self.checker_dataset.celery_task_id if self.checker_dataset else None
 
+    def inserted(self):
+        return self.checker_dataset.inserted if self.checker_dataset else False
+
 
 class Article(db.Model):
     """
@@ -210,6 +213,7 @@ class CheckerArticle(db.Model):
     authors = db.Column(db.Text)
     title = db.Column(db.Text)
     abstract = db.Column(db.Text)
+    resolved = db.Column(db.Boolean, default=False)
 
 
 class CheckerCompound(db.Model):
