@@ -78,6 +78,14 @@ class Inserter(object):
                 for ds_compound in ds_article.compounds:
                     c_compound = ds_compound.checker_compound
 
+                    # Double check compound doesn't match Atlas without being handled
+                    if (self.check_atlas_match(c_compound, session)
+                        and not c_compound.resolve):
+                        self.logger.error("Found an uncaught match for a compound!")
+                        self.logger.error("{} - {}".format(
+                                            c_compound.name, c_compound.inchikey))
+                        self.reject_dataset()
+
                     # Assume new if no resolve enum value in DB
                     resolve_id = c_compound.resolve or 1 
                     resolve = ResolveEnum(resolve_id)
@@ -105,7 +113,13 @@ class Inserter(object):
                         self.reject_dataset()
         self.logger.info("Recorded {} changes".format(len(self.changes)))
         self.write_change_log(dataset)
-
+        dataset.checker_dataset.inserted = True
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+            
     def write_change_log(self, dataset):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         outdir = os.path.realpath("insert_logs")
@@ -274,6 +288,12 @@ class Inserter(object):
             name = atlasdb.Name(name=name_string)
             session.add(name)
         return name
+
+    def check_atlas_match(self, compound, session):
+        result = session.query(atlasdb.Compound)\
+            .filter(atlasdb.Compound.inchikey == compound.inchikey)\
+            .first()
+        return bool(result)
 
     def get_origin(self, compound, session):
         origin_type_name = self.get_origin_type_name(compound.source_genus)

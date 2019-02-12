@@ -204,3 +204,7 @@ def calculate_exact_mass(smiles):
 @exit_after(5)
 def standardize_smiles_wrapper(smiles):
     return get_standardized_smiles(smiles)
+
+def inchikey_from_smiles(smiles):
+    m = Chem.MolFromSmiles(smiles)
+    return Chem.MolToInchiKey(m)

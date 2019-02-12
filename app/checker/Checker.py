@@ -6,7 +6,7 @@ from ..models import (CheckerArticle, CheckerCompound, CheckerDataset, Dataset,
                       Genus, Journal, Problem, Retraction)
 from ..utils import pubchem_search
 from ..utils.atlasdb import atlasdb
-from .Compound import Compound
+from .Compound import Compound, inchikey_from_smiles
 from .NameString import NameString, decapitalize_first
 from .ResolveEnum import ResolveEnum
 
@@ -99,18 +99,19 @@ class Checker(object):
         self.logger.info("Saved %d problems to DB", counter)
 
     def check_article(self, checker_article):
-        self.check_article_duplicate(checker_article)
-        self.check_doi(checker_article)
-        self.check_pmid(checker_article)
-        self.check_journal(checker_article)
-        self.check_year(checker_article)
-        self.check_volume(checker_article)
-        self.check_issue(checker_article)
-        self.check_pages(checker_article)
-        self.check_authors(checker_article)
-        self.check_title(checker_article)
-        self.check_abstract(checker_article)
-        commit()
+        if not checker_article.resolved:
+            self.check_article_duplicate(checker_article)
+            self.check_doi(checker_article)
+            self.check_pmid(checker_article)
+            self.check_journal(checker_article)
+            self.check_year(checker_article)
+            self.check_volume(checker_article)
+            self.check_issue(checker_article)
+            self.check_pages(checker_article)
+            self.check_authors(checker_article)
+            self.check_title(checker_article)
+            self.check_abstract(checker_article)
+            commit()
 
     def check_reject_article(self, article):
         return (bool(Retraction.query.filter_by(article_doi=article.doi).all())
@@ -202,8 +203,15 @@ class Checker(object):
 
     def create_checker_compound(self, db_compound, standardize=False, 
                                 restart=False):
+        # If restarting check if anything was changed in the dataset
+        restart_changed = False
+        if restart and db_compound.checker_compound:
+            if inchikey_from_smiles(db_compound.smiles) != db_compound.checker_compound.inchikey:
+                self.logger.warning("Re-creating compound because structure changed!")
+                restart_changed = True
+            
         # Start fresh if not restarting
-        if db_compound.checker_compound and not restart:
+        if (db_compound.checker_compound and not restart) or restart_changed:
             db.session.delete(db_compound.checker_compound)
             commit()
 
@@ -221,7 +229,7 @@ class Checker(object):
         reg_compound.cleanStructure()
 
         genus, species = split_source_organism(db_compound.source_organism)
-        if not restart:
+        if not restart or restart_changed:
             check_compound = CheckerCompound(
                 id=db_compound.id,
                 name=reg_name.get_name(),

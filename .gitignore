@@ -17,3 +17,4 @@ curator_env/
 certs/
 # Insertion logs
 insert_logs/
+temp.py

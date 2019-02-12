@@ -10,7 +10,7 @@ function insertionComplete(datasetId) {
         <h4>Dataset has been inserted!</h4>
         <a href="/admin/datasets">Go Back!</a>
     </div>`);
-    finish.insertAfter($(`#dataset-insert-button`));
+    finish.insertAfter($(`#dataset-insert-button`).parent());
 }
 
 

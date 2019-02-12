@@ -213,6 +213,7 @@ class CheckerArticle(db.Model):
     authors = db.Column(db.Text)
     title = db.Column(db.Text)
     abstract = db.Column(db.Text)
+    resolved = db.Column(db.Boolean, default=False)
 
 
 class CheckerCompound(db.Model):

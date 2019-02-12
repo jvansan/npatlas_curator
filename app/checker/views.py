@@ -236,7 +236,7 @@ def checkerrunning():
             'task_id': dataset.checker_task_id()
         }
     elif (not dataset.standard_running() and not dataset.checker_completed()
-        and not dataset.inserted()):
+        or dataset.inserted()):
         response = {
             'standard': False,
             'running': False,
@@ -262,7 +262,7 @@ def checkerrunning():
 def problem_list(ds_id):
     problems = Problem.query.filter_by(dataset_id=ds_id).all()
     ds = Dataset.query.get_or_404(ds_id)
-    ds.inserted()
+    inserted=ds.inserted()
     return render_template('checker/problems.html', ds_id=ds_id,
         problems=problems, inserted=inserted)
 
@@ -302,6 +302,9 @@ def resolve_problem(ds_id, prob_id):
     # Get all the necessary data from the database
     problem = Problem.query.get_or_404(prob_id)
     article = CheckerArticle.query.get_or_404(problem.article_id)
+    dataset = Dataset.query.get_or_404(ds_id)
+    cur_id = problem.dataset.curator.id
+
     if problem.compound_id:
         compound = CheckerCompound.query.get_or_404(problem.compound_id)
     else:
@@ -310,6 +313,15 @@ def resolve_problem(ds_id, prob_id):
     # Make sure problem is associated with this dataset
     if problem.dataset_id != ds_id:
         abort(404)
+
+    # Get next problem for redirection
+    current_problem_idx = dataset.problems.index(problem)
+    next_problem_idx = current_problem_idx + 1
+    if next_problem_idx == len(dataset.problems):
+        next_problem_id = None
+    else:
+        next_problem_id = dataset.problems[next_problem_idx].id
+    
     form = None
     npa_compounds = None
     if problem.problem == "journal":
@@ -324,6 +336,8 @@ def resolve_problem(ds_id, prob_id):
 
         npa_compounds = get_npa_compounds(compound)
         form = compound_form_factory(article, compound)
+        if compound.npaid:
+            form.select.default=1
 
     else:
         form = simple_problem_form_factory(problem, article)
@@ -336,16 +350,38 @@ def resolve_problem(ds_id, prob_id):
             problem.resolved = True
             commit()
         else:
+            if force:
+                article.resolved = True
+
+            # This ensures that a replacement of an NPAID doesn't leave another
+            # NPAID with a matching InchiKey
+            if form.__class__.__name__ == "CompoundForm":
+                if form.select.data == "replace":
+                    npa_match = [x for x in npa_compounds if x.npaid == form.npaid.data][0]
+                    if npa_match.inchikey != compound.inchikey:
+                        flash("You can't select that NPAID to replace!", category='danger')
+                        flash_errors(form)
+                        return render_template('checker/resolve.html', ds_id=ds_id,
+                           problem=problem, article=article, form=form,
+                           compound=compound, cur_id=cur_id,
+                           npa_compounds=npa_compounds)
+                    # except:
+                    #     flash("Unknown error...")
+                    #     # abort(500)
+
             save_resolve_data(form, article, compound)
             problem.resolved = True
             commit()
 
-        return redirect(url_for('checker.problem_list', ds_id=ds_id))
+        if next_problem_id:
+            return redirect(url_for('checker.resolve_problem', ds_id=ds_id,
+                            prob_id=next_problem_id))
+        else:
+            return redirect(url_for('checker.problem_list', ds_id=ds_id))
     
     else:
         flash_errors(form)
 
-    cur_id = problem.dataset.curator.id
     return render_template('checker/resolve.html', ds_id=ds_id,
                            problem=problem, article=article, form=form,
                            compound=compound, cur_id=cur_id,
