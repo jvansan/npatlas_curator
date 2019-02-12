@@ -466,9 +466,10 @@ def get_npa_compounds(compound):
         res = sess.query(atlasdb.Compound)\
                 .filter(atlasdb.Compound.id == compound.npaid)\
                 .first()
-        compounds.append(
-            NPACompound(res.id, res.original_name.name, res.molblock, res.inchikey)
-        )
+        if res:
+            compounds.append(
+                NPACompound(res.id, res.original_name.name, res.molblock, res.inchikey)
+            )
     struct_res = sess.query(atlasdb.Compound)\
         .filter(atlasdb.Compound.inchikey.startswith(compound.inchikey.split('-')[0]))\
         .all()
