@@ -58,6 +58,14 @@ in order to run the Celery tasks. This server can be started by running:
 docker run --name redis -p 6379:6379 -d redis
 ```
 
+If you do the following, redis will stop trying to backup redis info. This
+is fine because there are no necessary persistent data on the redis db.
+From redis-cli:
+
+```
+config set stop-writes-on-bgsave-error no
+```
+
 4) *Flask/uWSGI Container*
 
 This container will run the Curator Flask app with a uWSGI server.
