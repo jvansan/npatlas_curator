@@ -353,18 +353,19 @@ def resolve_problem(ds_id, prob_id):
             if force:
                 article.resolved = True
 
+            # TODO: resolve this logic
             # This ensures that a replacement of an NPAID doesn't leave another
             # NPAID with a matching InchiKey
-            if form.__class__.__name__ == "CompoundForm":
-                if form.select.data == "replace":
-                    npa_match = [x for x in npa_compounds if x.npaid == form.npaid.data][0]
-                    if npa_match.inchikey != compound.inchikey:
-                        flash("You can't select that NPAID to replace!", category='danger')
-                        flash_errors(form)
-                        return render_template('checker/resolve.html', ds_id=ds_id,
-                           problem=problem, article=article, form=form,
-                           compound=compound, cur_id=cur_id,
-                           npa_compounds=npa_compounds)
+#             if form.__class__.__name__ == "CompoundForm":
+#                 if form.select.data == "replace":
+#                     npa_match = [x for x in npa_compounds if x.npaid == form.npaid.data][0]
+#                     if npa_match.inchikey != compound.inchikey:
+#                         flash("You can't select that NPAID to replace!", category='danger')
+#                         flash_errors(form)
+#                         return render_template('checker/resolve.html', ds_id=ds_id,
+#                            problem=problem, article=article, form=form,
+#                            compound=compound, cur_id=cur_id,
+#                            npa_compounds=npa_compounds)
                     # except:
                     #     flash("Unknown error...")
                     #     # abort(500)
@@ -465,9 +466,10 @@ def get_npa_compounds(compound):
         res = sess.query(atlasdb.Compound)\
                 .filter(atlasdb.Compound.id == compound.npaid)\
                 .first()
-        compounds.append(
-            NPACompound(res.id, res.original_name.name, res.molblock, res.inchikey)
-        )
+        if res:
+            compounds.append(
+                NPACompound(res.id, res.original_name.name, res.molblock, res.inchikey)
+            )
     struct_res = sess.query(atlasdb.Compound)\
         .filter(atlasdb.Compound.inchikey.startswith(compound.inchikey.split('-')[0]))\
         .all()
