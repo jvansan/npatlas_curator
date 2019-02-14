@@ -212,12 +212,13 @@ class CurationData(Base):
 
 class ExternalDB(Base):
     __tablename__ = 'compound_external_db'
+    id = Column('id', Integer, primary_key=True)
     compound_id = Column('compound_compound_id', Integer,
-                         ForeignKey('compound.compound_id'), primary_key=True)
+                         ForeignKey('compound.compound_id'), nullable=False)
     db_id = Column('compound_external_db_id', Integer,
                    ForeignKey(
                        'compound_external_db_id.compound_external_db_id'),
-                   primary_key=True)
+                   nullable=False)
     db_code = Column('compound_external_db_code', String(20), nullable=False)
     extdb = relationship('ExternalDBID')
     compound = relationship('Compound')
