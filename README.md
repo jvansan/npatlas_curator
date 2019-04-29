@@ -55,7 +55,7 @@ The "Checker" portion of the curator app requires a Redis messaging queue
 in order to run the Celery tasks. This server can be started by running:
 
 ```
-docker run --name redis -p 6379:6379 -d redis
+docker run --name redis --restart always -d redis
 ```
 
 If you do the following, redis will stop trying to backup redis info. This
@@ -89,7 +89,7 @@ mysql -u<DB_USER> -p<DB_PASSWORD> -h<DBSERVER> npatlas_curation < dump.sql
 
 ```
 docker build -t curator:latest -t curator:<VERSION> .
-docker run --name curator -v $(pwd):/curator -p 5000:5000 \
+docker run --name curator -v $(pwd):/curator --restart always\
 --link mysql:dbserver --link redis:redis \
 --log-opt max-size=5m --log-opt max-file=10 \
 -e DBSERVER=dbserver -e REDIS=redis -d curator:latest 
@@ -116,5 +116,5 @@ docker build -f Dockerfile.celery -t curator-celery:latest .
 docker run --name celery -v $(pwd):/curator --link mysql:dbserver \
 --link redis:redis -e DBSERVER=dbserver -e REDIS=redis \
 --log-opt max-size=5m --log-opt max-file=10 \
--d curator-celery:latest
+--restrt always -d curator-celery:latest
 ```
