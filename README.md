@@ -116,5 +116,5 @@ docker build -f Dockerfile.celery -t curator-celery:latest .
 docker run --name celery -v $(pwd):/curator --link mysql:dbserver \
 --link redis:redis -e DBSERVER=dbserver -e REDIS=redis \
 --log-opt max-size=5m --log-opt max-file=10 \
---restrt always -d curator-celery:latest
+--restart always -d curator-celery:latest
 ```
