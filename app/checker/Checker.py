@@ -6,7 +6,7 @@ from ..models import (CheckerArticle, CheckerCompound, CheckerDataset, Dataset,
                       Genus, Journal, Problem, Retraction)
 from ..utils import pubchem_search
 from ..utils.atlasdb import atlasdb
-from .Compound import Compound, inchikey_from_smiles
+from ..utils.Compound import Compound, inchikey_from_smiles
 from .NameString import NameString, decapitalize_first
 from .ResolveEnum import ResolveEnum
 
@@ -482,7 +482,7 @@ class Correction(object):
         self.problem = problem
 
     def __repr__(self):
-        return "{} -> {}".format(self.art_id + self.comp_id, self.problem)
+        return "{} -> {}".format(self.article_id + self.compound_id, self.problem)
 
     @staticmethod
     def verify_problem(problem):

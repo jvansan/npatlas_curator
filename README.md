@@ -55,7 +55,7 @@ The "Checker" portion of the curator app requires a Redis messaging queue
 in order to run the Celery tasks. This server can be started by running:
 
 ```
-docker run --name redis --restart always -d redis
+docker run --restart always --name redis -p 6379:6379 -d redis
 ```
 
 If you do the following, redis will stop trying to backup redis info. This

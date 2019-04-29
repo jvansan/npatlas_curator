@@ -212,13 +212,21 @@ class CurationData(Base):
 
 class ExternalDB(Base):
     __tablename__ = 'compound_external_db'
+    id = Column('id', Integer, primary_key=True)
     compound_id = Column('compound_compound_id', Integer,
-                         ForeignKey('compound.compound_id'), primary_key=True)
+                         ForeignKey('compound.compound_id'), nullable=False)
     db_id = Column('compound_external_db_id', Integer,
                    ForeignKey(
                        'compound_external_db_id.compound_external_db_id'),
-                   primary_key=True)
+                   nullable=False)
     db_code = Column('compound_external_db_code', String(20), nullable=False)
+    # compound_id = Column('compound_compound_id', Integer,
+    #                      ForeignKey('compound.compound_id'), primary_key=True)
+    # db_id = Column('compound_external_db_id', Integer,
+    #                ForeignKey(
+    #                    'compound_external_db_id.compound_external_db_id'),
+    #                primary_key=True)
+    # db_code = Column('compound_external_db_code', String(20), nullable=False)
     extdb = relationship('ExternalDBID')
     compound = relationship('Compound')
 
@@ -448,6 +456,15 @@ class AtlasDB(object):
             sess.add(journal)
         return journal
 
+    def compoundByName(self, comp_name, sess):
+        # Not useful for "Not named" compounds
+        assert comp_name != "Not named"
+        compound = sess.query(self.Compound)\
+            .filter(self.Compound.id==self.CompoundName.compound_id)\
+            .filter(self.Name.id==self.CompoundName.name_id)\
+            .filter(self.Name.name==comp_name)\
+            .first()
+        return compound
 
 # Instance of Atlas DB to pass around
 atlasdb = AtlasDB()
