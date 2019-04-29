@@ -11,8 +11,8 @@ from rdkit import rdBase
 rdBase.DisableLog('rdApp.warning')
 from requests.exceptions import RequestException
 
-from ..utils.timeout import exit_after
-from ..utils.pubchem_smiles_standardizer import get_standardized_smiles
+from .timeout import exit_after
+from .pubchem_smiles_standardizer import get_standardized_smiles
 
 class Compound(object):
 

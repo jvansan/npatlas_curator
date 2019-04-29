@@ -6,7 +6,7 @@ from decimal import Decimal
 from .. import db
 from ..models import Dataset, Genus, Journal
 from ..utils.atlasdb import atlasdb
-from .Compound import Compound
+from ..utils.Compound import Compound
 from .ResolveEnum import ResolveEnum
 
 
@@ -29,7 +29,7 @@ class Inserter(object):
         self.dataset_id = dataset_id
 
         self.task = kwargs.get("celery_task", None)
-        self.logger = kwargs.get("logger") or self.default_logger()
+        self.logger = kwargs.get("logger")
         self.changes = []
 
     def update_status(self, current, total, status):

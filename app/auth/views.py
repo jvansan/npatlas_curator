@@ -50,4 +50,4 @@ def logout():
     flash('You have successfully been logged out.')
 
     # redirect to home page
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('home.homepage'))
